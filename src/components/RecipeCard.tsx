@@ -1,5 +1,5 @@
 import { Trash2, Edit2, TrendingUp } from 'lucide-react';
-import { Recipe } from '../types';
+import type { Recipe } from '../types';
 
 interface RecipeCardProps {
     recipe: Recipe;
@@ -12,55 +12,75 @@ export function RecipeCard({ recipe, onEdit, onDelete }: RecipeCardProps) {
         ? ((recipe.calculatedPrice - recipe.totalCost) / recipe.calculatedPrice * 100).toFixed(1)
         : 0;
 
+    const handleDelete = () => {
+        onDelete(recipe.id);
+    };
+
     return (
-        <div className="group relative bg-zinc-800/50 border border-zinc-700/50 rounded-2xl p-5 hover:border-indigo-500/50 hover:bg-zinc-800/80 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10">
-            <div className="flex justify-between items-start mb-4">
-                <div>
-                    <h3 className="font-bold text-lg text-white group-hover:text-indigo-400 transition-colors">
-                        {recipe.name}
-                    </h3>
-                    <div className="text-xs text-zinc-500 mt-1">
-                        {recipe.ingredients.length} Malzeme
+        <div className="group relative bg-zinc-800/50 border border-zinc-700/50 rounded-2xl overflow-hidden hover:border-indigo-500/50 hover:bg-zinc-800/80 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/10 flex flex-col">
+            {/* Image Section */}
+            <div className="aspect-square bg-zinc-900 relative overflow-hidden group">
+                {recipe.image ? (
+                    <img
+                        src={recipe.image}
+                        alt={recipe.name}
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity"
+                    />
+                ) : (
+                    <div className="flex items-center justify-center w-full h-full text-zinc-700 bg-zinc-800/50">
+                        <span className="text-xs">Görsel Yok</span>
                     </div>
-                </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                )}
+
+                {/* Actions Overlay */}
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-lg p-1 backdrop-blur-sm">
                     <button
                         onClick={() => onEdit(recipe)}
-                        className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                        className="p-1.5 hover:bg-indigo-500 rounded-md text-zinc-300 hover:text-white transition-colors"
+                        title="Düzenle"
                     >
-                        <Edit2 size={16} />
+                        <Edit2 size={14} />
                     </button>
                     <button
-                        onClick={() => onDelete(recipe.id)}
-                        className="p-2 hover:bg-red-500/20 rounded-lg text-zinc-400 hover:text-red-400 transition-colors"
+                        onClick={handleDelete}
+                        className="p-1.5 hover:bg-red-500 rounded-md text-zinc-300 hover:text-white transition-colors"
+                        title="Sil"
                     >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                     </button>
                 </div>
             </div>
 
-            <div className="space-y-3">
-                <div className="flex justify-between items-center py-2 border-b border-zinc-700/50 border-dashed">
-                    <span className="text-sm text-zinc-400">Maliyet</span>
-                    <span className="font-mono text-zinc-200">{recipe.totalCost.toFixed(2)} ₺</span>
+            <div className="p-4 flex flex-col flex-1">
+                <div className="mb-3">
+                    <h3 className="font-bold text-lg text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
+                        {recipe.name}
+                    </h3>
+                    <div className="text-xs text-zinc-500">
+                        {recipe.ingredients.length} Malzeme
+                    </div>
                 </div>
 
-                <div className="flex justify-between items-center py-2 border-b border-zinc-700/50 border-dashed">
-                    <span className="text-sm text-zinc-400">Satış Fiyatı</span>
-                    <span className="font-mono text-green-400 font-bold">{recipe.calculatedPrice.toFixed(2)} ₺</span>
-                </div>
+                <div className="space-y-2 mt-auto">
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-zinc-500">Maliyet</span>
+                        <span className="font-mono text-zinc-300">{recipe.totalCost.toFixed(2)} ₺</span>
+                    </div>
 
-                <div className="flex justify-between items-center pt-2">
-                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-                        <span className="bg-zinc-700/50 px-2 py-0.5 rounded text-zinc-300">
-                            x{recipe.costMultiplier}
-                        </span>
-                        <span>Çarpan</span>
+                    <div className="flex justify-between items-center text-sm border-t border-zinc-700/50 pt-2">
+                        <span className="text-zinc-500">Satış</span>
+                        <span className="font-mono text-green-400 font-bold">{recipe.calculatedPrice.toFixed(2)} ₺</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-indigo-400 text-sm font-medium">
-                        <TrendingUp size={14} />
-                        %{profitMargin} Kâr
-                    </div>
+                </div>
+            </div>
+
+            <div className="bg-zinc-900/40 px-4 py-2 flex justify-between items-center text-xs">
+                <span className="bg-zinc-700/30 px-1.5 py-0.5 rounded text-zinc-400">
+                    x{recipe.costMultiplier}
+                </span>
+                <div className="flex items-center gap-1 text-indigo-400 font-medium">
+                    <TrendingUp size={12} />
+                    %{profitMargin}
                 </div>
             </div>
         </div>

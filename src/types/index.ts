@@ -2,7 +2,7 @@ export interface Ingredient {
     id: string;
     name: string;
     quantity: number;
-    unit: 'kg' | 'lt' | 'adet';
+    unit: 'kg' | 'lt' | 'adet' | 'gr' | 'cl';
     price: number;
 }
 
@@ -13,6 +13,7 @@ export interface Recipe {
     totalCost: number;
     costMultiplier: number;
     calculatedPrice: number;
+    image?: string;
 }
 
 export interface SalesTarget {
@@ -26,9 +27,31 @@ export interface Expense {
     name: string;
     amount: number;
     category: 'fixed' | 'variable';
+    group?: 'general' | 'production' | 'sales' | 'personnel'; // Strict union now
+
+    // v0.5 Smart Expense Fields
+    isAutomated?: boolean;
+    autoType?: 'food_cost' | 'packaging' | 'percentage' | 'courier' | 'manual';
+    autoValue?: number; // Stores %, ratio, or count
+    vatRate?: number; // 0.20, 0.01 etc.
+}
+
+export interface CompanyInfo {
+    name: string;
+    officialName: string;
+    ownerName: string; // İşletme Yetkilisi
+    type: 'limited' | 'sahis';
 }
 
 export interface AppState {
+    company: CompanyInfo | null;
+    setCompany: (info: CompanyInfo) => void;
+    isConfigOpen: boolean;
+    toggleConfig: (isOpen: boolean) => void;
+
+    theme: 'dark' | 'light';
+    toggleTheme: () => void;
+
     recipes: Recipe[];
     salesTargets: SalesTarget[];
     expenses: Expense[];
@@ -36,18 +59,21 @@ export interface AppState {
     packagingCosts: Expense[];
 
     addRecipe: (recipe: Recipe) => void;
-    updateRecipe: (id: string, recipe: Recipe) => void;
+    updateRecipe: (id: string, updated: Recipe) => void;
     deleteRecipe: (id: string) => void;
 
     addSalesTarget: (target: SalesTarget) => void;
-    updateSalesTarget: (id: string, target: SalesTarget) => void;
+    updateSalesTarget: (id: string, updated: SalesTarget) => void;
     removeSalesTarget: (id: string) => void;
 
     addPackagingCost: (cost: Expense) => void;
+    updatePackagingCost: (id: string, cost: Expense) => void;
     removePackagingCost: (id: string) => void;
 
     addExpense: (expense: Expense) => void;
+    updateExpense: (id: string, expense: Expense) => void;
     removeExpense: (id: string) => void;
 
     setDaysWorked: (days: number) => void;
+    initializeDefaults: () => void;
 }

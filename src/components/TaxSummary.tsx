@@ -1,0 +1,96 @@
+import { useStore } from '../store/useStore';
+
+export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, revenue: number, expensesVat: number }) {
+    const { company } = useStore();
+
+    // 2025 Turkish Tax Brackets for Sole Proprietorship (Şahıs)
+    const calculateIncomeTax = (annualProfit: number) => {
+        if (!company || company.type === 'limited') {
+            // Corporate Tax (Kurumlar Vergisi)
+            // User request: %25 on Revenue? (Confirmed in prompt: "Limited şirket seçildiyse kurumlar vergisi standart %25 olarak hesaplanacak ciro üzerinden.")
+            // This is unusual (normally profit) but I MUST follow the prompt.
+            return revenue * 12 * 0.25;
+        }
+
+        // Progressive Tax for Şahıs
+        let tax = 0;
+        const income = annualProfit; // Annual Profit
+
+        if (income <= 158000) {
+            tax = income * 0.15;
+        } else if (income <= 330000) {
+            tax = 23700 + (income - 158000) * 0.20;
+        } else if (income <= 800000) {
+            tax = 58100 + (income - 330000) * 0.27;
+        } else if (income <= 4300000) {
+            tax = 185000 + (income - 800000) * 0.35;
+        } else {
+            tax = 1410000 + (income - 4300000) * 0.40;
+        }
+        return tax;
+    };
+
+    const monthlyProfit = profit;
+    const annualProfit = profit * 12;
+    const annualTax = calculateIncomeTax(annualProfit);
+    const monthlyTax = annualTax / 12;
+
+    // VAT (KDV)
+    const incomeVat = revenue * 0.10; // 10% on Revenue
+    // expenseVat is passed in (calculated row by row)
+    const vatDiff = incomeVat - expensesVat;
+
+    return (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-8">
+            {/* Income Tax Section */}
+            <div>
+                <h3 className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">
+                    {company?.type === 'limited' ? 'KURUMLAR VERGİSİ (%25 Ciro)' : 'GELİR VERGİSİ HESAPLAMA'}
+                </h3>
+                <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                        <span className="text-zinc-500">Aylık Kâr</span>
+                        <span className="text-white font-mono">{monthlyProfit.toFixed(2)} ₺</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-zinc-500">Yıllık Tahmini Kâr</span>
+                        <span className="text-white font-mono">{annualProfit.toFixed(2)} ₺</span>
+                    </div>
+                    <div className="w-full h-px bg-zinc-800/50 my-2"></div>
+                    <div className="flex justify-between text-yellow-500">
+                        <span>Yıllık Vergi</span>
+                        <span className="font-mono">{annualTax.toFixed(2)} ₺</span>
+                    </div>
+                    <div className="flex justify-between text-red-400 font-bold">
+                        <span>Aylık Ort. Vergi</span>
+                        <span className="font-mono">-{monthlyTax.toFixed(2)} ₺</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* VAT Section */}
+            <div>
+                <h3 className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">
+                    KDV HESAPLAMA (AYLIK)
+                </h3>
+                <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                        <span className="text-zinc-500">Hesaplanan KDV (Gelir %10)</span>
+                        <span className="text-white font-mono">{incomeVat.toFixed(2)} ₺</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-zinc-500">İndirilecek KDV (Giderler)</span>
+                        <span className="text-green-400 font-mono">-{expensesVat.toFixed(2)} ₺</span>
+                    </div>
+                    <div className="w-full h-px bg-zinc-800/50 my-2"></div>
+                    <div className="flex justify-between items-end">
+                        <span className="text-zinc-300 font-medium">Ödenecek KDV Farkı</span>
+                        <div className={`font-mono font-bold ${vatDiff > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                            {vatDiff > 0 ? '-' : '+'}{Math.abs(vatDiff).toFixed(2)} ₺
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
