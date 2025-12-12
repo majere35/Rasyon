@@ -23,23 +23,5 @@ export const useStore = create<AppState>()(
                 salesTargets: [...state.salesTargets, target]
             })),
             updateSalesTarget: (id: string, updated: SalesTarget) => set((state) => ({
-                salesTargets: state.salesTargets.map((t) => (t.id === id ? updated : t))
-            })),
-            removeSalesTarget: (id: string) => set((state) => ({
-                salesTargets: state.salesTargets.filter((t) => t.id !== id)
-            })),
-
-            addExpense: (expense: Expense) => set((state) => ({
-                expenses: [...state.expenses, expense]
-            })),
-            removeExpense: (id: string) => set((state) => ({
-                expenses: state.expenses.filter((e) => e.id !== id)
-            })),
-
-            setDaysWorked: (days: number) => set({ daysWorkedInMonth: days }),
-        }),
-        {
-            name: 'resto-app-storage',
-        }
     )
-);
+            );

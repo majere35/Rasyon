@@ -43,6 +43,9 @@ export interface AppState {
     updateSalesTarget: (id: string, target: SalesTarget) => void;
     removeSalesTarget: (id: string) => void;
 
+    addPackagingCost: (cost: Expense) => void;
+    removePackagingCost: (id: string) => void;
+
     addExpense: (expense: Expense) => void;
     removeExpense: (id: string) => void;
 
