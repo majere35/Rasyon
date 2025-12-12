@@ -1,6 +1,7 @@
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { RecipesView } from './views/RecipesView';
 import { TargetsView } from './views/TargetsView';
+import { BalanceView } from './views/BalanceView';
 
 function App() {
   return (
@@ -19,12 +20,7 @@ function App() {
 
           {activeTab === 'targets' && <TargetsView />}
 
-          {activeTab === 'balance' && (
-            <div className="p-8 border border-zinc-800 rounded-2xl bg-zinc-900/50 backdrop-blur-sm">
-              <h2 className="text-2xl font-bold mb-4">Aylık Bilanço</h2>
-              <p className="text-zinc-500">Bu modül yapım aşamasında.</p>
-            </div>
-          )}
+          {activeTab === 'balance' && <BalanceView />}
         </div>
       )}
     </DashboardLayout>
