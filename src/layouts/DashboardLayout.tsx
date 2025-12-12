@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
+import { MobileNav } from '../components/MobileNav';
+import { useStore } from '../store/useStore';
+import { ChefHat } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: (activeTab: 'recipes' | 'targets' | 'balance') => React.ReactNode;
@@ -7,18 +10,37 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
     const [activeTab, setActiveTab] = useState<'recipes' | 'targets' | 'balance'>('recipes');
+    const { toggleConfig } = useStore();
 
     return (
         <div className="flex min-h-screen bg-zinc-50 dark:bg-[#0f0f11] text-zinc-900 dark:text-zinc-100 font-sans selection:bg-indigo-500/30 transition-colors duration-300">
-            <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-            <main className="flex-1 h-screen overflow-auto relative">
+            {/* Desktop Sidebar - Hidden on Mobile */}
+            <div className="hidden md:block">
+                <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+            </div>
+
+            {/* Mobile Header */}
+            <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-white dark:bg-[#18181b] border-b border-zinc-200 dark:border-zinc-800 z-40 flex items-center px-4 justify-between transition-colors">
+                <div className="flex items-center gap-3" onClick={() => toggleConfig(true)}>
+                    <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <ChefHat size={18} className="text-white" />
+                    </div>
+                    <h1 className="font-bold text-zinc-900 dark:text-white tracking-tight">RASYON</h1>
+                </div>
+                <div className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 bg-zinc-100 dark:bg-zinc-900 px-2 py-1 rounded-full">v1.1</div>
+            </div>
+
+            <main className="flex-1 h-screen overflow-auto relative pt-16 md:pt-0 pb-20 md:pb-0">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/10 via-zinc-50/0 to-zinc-50/0 dark:from-indigo-900/20 dark:via-zinc-900/0 dark:to-zinc-900/0 pointer-events-none transition-colors" />
 
-                <div className="relative p-8 max-w-7xl mx-auto">
+                <div className="relative p-4 md:p-8 max-w-7xl mx-auto">
                     {children(activeTab)}
                 </div>
             </main>
+
+            {/* Mobile Navigation - Hidden on Desktop */}
+            <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
         </div>
     );
 }

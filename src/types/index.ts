@@ -52,6 +52,9 @@ export interface AppState {
     theme: 'dark' | 'light';
     toggleTheme: () => void;
 
+    user: any | null; // Using any for Firebase User to avoid complex type deps for now
+    setUser: (user: any | null) => void;
+
     recipes: Recipe[];
     salesTargets: SalesTarget[];
     expenses: Expense[];

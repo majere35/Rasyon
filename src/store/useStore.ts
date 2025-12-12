@@ -11,6 +11,10 @@ export const useStore = create<AppState>()(
             toggleConfig: (isOpen) => set({ isConfigOpen: isOpen }),
             theme: 'dark',
             toggleTheme: () => set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
+
+            user: null,
+            setUser: (user) => set({ user }),
+
             recipes: [],
             salesTargets: [],
             expenses: [],
