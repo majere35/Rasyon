@@ -5,41 +5,48 @@ import { AppState } from '../types';
 export const useStore = create<AppState>()(
     persist(
         (set) => ({
-            recipes: [],
-            salesTargets: [],
-            expenses: [],
-            daysWorkedInMonth: 26,
-            packagingCosts: [],
+            import { create } from 'zustand';
+            import { persist } from 'zustand/middleware';
+            import { AppState } from '../types';
 
-            addRecipe: (recipe) => set((state) => ({ recipes: [...state.recipes, recipe] })),
-            updateRecipe: (id, updated) => set((state) => ({
-                recipes: state.recipes.map((r) => (r.id === id ? updated : r))
-            })),
-            deleteRecipe: (id) => set((state) => ({
-                recipes: state.recipes.filter((r) => r.id !== id)
-            })),
+            export const useStore = create<AppState>()(
+                persist(
+                    (set) => ({
+                        recipes: [],
+                        salesTargets: [],
+                        expenses: [],
+                        daysWorkedInMonth: 26,
+                        packagingCosts: [],
 
-            addSalesTarget: (target) => set((state) => ({
-                salesTargets: [...state.salesTargets, target]
-            })),
-            updateSalesTarget: (id, updated) => set((state) => ({
-                salesTargets: state.salesTargets.map((t) => (t.id === id ? updated : t))
-            })),
-            removeSalesTarget: (id) => set((state) => ({
-                salesTargets: state.salesTargets.filter((t) => t.id !== id)
-            })),
+                        addRecipe: (recipe: Recipe) => set((state) => ({ recipes: [...state.recipes, recipe] })),
+                        updateRecipe: (id: string, updated: Recipe) => set((state) => ({
+                            recipes: state.recipes.map((r) => (r.id === id ? updated : r))
+                        })),
+                        deleteRecipe: (id: string) => set((state) => ({
+                            recipes: state.recipes.filter((r) => r.id !== id)
+                        })),
 
-            addExpense: (expense) => set((state) => ({
-                expenses: [...state.expenses, expense]
-            })),
-            removeExpense: (id) => set((state) => ({
-                expenses: state.expenses.filter((e) => e.id !== id)
-            })),
+                        addSalesTarget: (target: SalesTarget) => set((state) => ({
+                            salesTargets: [...state.salesTargets, target]
+                        })),
+                        updateSalesTarget: (id: string, updated: SalesTarget) => set((state) => ({
+                            salesTargets: state.salesTargets.map((t) => (t.id === id ? updated : t))
+                        })),
+                        removeSalesTarget: (id: string) => set((state) => ({
+                            salesTargets: state.salesTargets.filter((t) => t.id !== id)
+                        })),
 
-            setDaysWorked: (days) => set({ daysWorkedInMonth: days }),
-        }),
-        {
-            name: 'resto-app-storage',
-        }
-    )
-);
+                        addExpense: (expense: Expense) => set((state) => ({
+                            expenses: [...state.expenses, expense]
+                        })),
+                        removeExpense: (id: string) => set((state) => ({
+                            expenses: state.expenses.filter((e) => e.id !== id)
+                        })),
+
+                        setDaysWorked: (days: number) => set({ daysWorkedInMonth: days }),
+                    }),
+                    {
+                        name: 'resto-app-storage',
+                    }
+                )
+            );
