@@ -27,7 +27,7 @@ export function BalanceView() {
         return sum + (recipe ? recipe.totalCost * target.dailyTarget : 0);
     }, 0);
 
-    const packagingCostPerOrder = packagingCosts.reduce((sum, item) => sum + item.amount, 0);
+    const packagingCostPerOrder = (packagingCosts || []).reduce((sum, item) => sum + item.amount, 0);
     const totalDailyPackagingCost = totalDailyItems * packagingCostPerOrder;
 
     const totalDailyVariableCost = totalDailyIngredientsCost + totalDailyPackagingCost;

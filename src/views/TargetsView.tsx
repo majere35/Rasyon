@@ -19,7 +19,7 @@ export function TargetsView() {
     }, 0);
 
     // Packaging Cost Per Order (sum of unit costs of all packaging items)
-    const packagingCostPerOrder = packagingCosts.reduce((sum, item) => sum + item.amount, 0);
+    const packagingCostPerOrder = (packagingCosts || []).reduce((sum, item) => sum + item.amount, 0);
     const totalDailyPackagingCost = totalDailyItems * packagingCostPerOrder;
 
     const totalDailyProfit = totalDailyRevenue - totalDailyCost - totalDailyPackagingCost;
