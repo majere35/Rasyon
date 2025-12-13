@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { X, Moon, Sun, ScrollText, Book } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { APP_VERSION } from '../config';
+import { releaseNotes } from '../data/releaseNotes';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -142,33 +143,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    <div>
-                                        <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                                            {APP_VERSION} <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 px-2 py-0.5 rounded">GÜNCEL</span>
-                                        </div>
-                                        <ul className="list-disc pl-5 mt-2 space-y-1 text-xs">
-                                            <li>Satış Hedefleri: "Günlük Adet" → "Restoran" ve "Paket" olarak ayrıldı.</li>
-                                            <li>Ambalaj maliyeti sadece paket satışlarına yansıtılacak şekilde güncellendi.</li>
-                                            <li>Tablo düzeni sabitlendi, büyük sayılarda kayma sorunu giderildi.</li>
-                                            <li>Sayı girişleri (input) için özel tasarım (oklar) eklendi.</li>
-                                            <li>Açılır menülerde taşma sorunu (clipping) düzeltildi.</li>
-                                        </ul>
-                                    </div>
-                                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 opacity-70">
-                                        <div className="font-bold text-zinc-500">v1.0.6</div>
-                                        <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-zinc-500">
-                                            <li>Para birimi formatı standartlaştırıldı (102.204,00 ₺).</li>
-                                            <li>Reçete kartlarındaki çarpan değeri yuvarlandı.</li>
-                                            <li>Sürüm numarası dinamik hale getirildi.</li>
-                                        </ul>
-                                    </div>
-                                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 opacity-50">
-                                        <div className="font-bold text-zinc-500">v1.0.4</div>
-                                        <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-zinc-500">
-                                            <li>Admin Paneli eklendi (Canlı istatistikler, Kullanıcı Takibi).</li>
-                                            <li>Kayıt ve Giriş ekranları yenilendi.</li>
-                                        </ul>
-                                    </div>
+                                    {
+                                        releaseNotes.slice(0, 10).map((release, index) => (
+                                            <div key={release.version} className={`space-y-4 ${index !== 0 ? 'pt-4 border-t border-zinc-200 dark:border-zinc-800' : ''} ${index > 0 ? 'opacity-70 hover:opacity-100 transition-opacity' : ''}`}>
+                                                <div>
+                                                    <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                                                        {release.version}
+                                                        {index === 0 && (
+                                                            <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 px-2 py-0.5 rounded">
+                                                                GÜNCEL
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                                                        {release.changes.map((change, i) => (
+                                                            <li key={i}>{change}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
                                 </div>
                             )}
                         </div>
