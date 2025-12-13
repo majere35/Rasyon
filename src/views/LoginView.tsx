@@ -121,7 +121,7 @@ export function LoginView() {
 
                 {/* Footer Decor */}
                 <div className="bg-zinc-100 dark:bg-zinc-900/50 p-4 text-center border-t border-zinc-200 dark:border-zinc-800">
-                    <p className="text-[10px] text-zinc-400">Restoran & Kafe Finans Yönetimi v1.2</p>
+                    <p className="text-[10px] text-zinc-400">2025 RASYON v1.0.4</p>
                 </div>
             </div>
         </div>

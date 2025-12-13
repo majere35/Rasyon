@@ -4,7 +4,7 @@ import { useStore } from '../store/useStore';
 import type { SalesTarget, Expense } from '../types';
 
 export function TargetsView() {
-    const { recipes, salesTargets, addSalesTarget, updateSalesTarget, removeSalesTarget, packagingCosts, addPackagingCost, removePackagingCost, updatePackagingCost } = useStore();
+    const { recipes, salesTargets, addSalesTarget, updateSalesTarget, removeSalesTarget, packagingCosts, addPackagingCost, removePackagingCost, updatePackagingCost, updateRecipe } = useStore();
 
     // Inline input states for Packaging
     const [newPkgName, setNewPkgName] = useState('');
@@ -167,7 +167,24 @@ export function TargetsView() {
                                                 {totalCost.toFixed(2)}
                                             </td>
                                             <td className="px-2 py-3 text-right text-zinc-200 font-mono">
-                                                {recipe.calculatedPrice.toFixed(2)}
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    step="0.01"
+                                                    value={recipe.calculatedPrice}
+                                                    onChange={(e) => {
+                                                        const newPrice = parseFloat(e.target.value);
+                                                        if (!isNaN(newPrice)) {
+                                                            const newMultiplier = recipe.totalCost > 0 ? newPrice / recipe.totalCost : 0;
+                                                            updateRecipe(recipe.id, {
+                                                                ...recipe,
+                                                                calculatedPrice: newPrice,
+                                                                costMultiplier: newMultiplier
+                                                            });
+                                                        }
+                                                    }}
+                                                    className="w-20 bg-zinc-800 rounded px-1 py-1 text-right font-medium text-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                />
                                             </td>
                                             <td className="px-2 py-3 text-right font-mono text-green-400 font-medium">
                                                 {totalRevenue.toFixed(2)}

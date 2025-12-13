@@ -1,7 +1,7 @@
 {
-  "name": "resto-app",
+  "name": "rasyon",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "caniuse-lite": "^1.0.30001760",
     "clsx": "^2.1.1",
+    "firebase": "^12.6.0",
     "lucide-react": "^0.561.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

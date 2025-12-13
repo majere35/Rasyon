@@ -1,0 +1,6 @@
+@echo off
+echo Rasyon Baslatiliyor...
+cd /d "c:\Users\ayyil\.gemini\antigravity\scratch\restoapp\rasyon"
+start "" http://localhost:5173
+echo Sunucu baslatiliyor, lutfen bu pencereyi kapatmayin...
+npm run dev
