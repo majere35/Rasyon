@@ -147,17 +147,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             {APP_VERSION} <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 px-2 py-0.5 rounded">GÜNCEL</span>
                                         </div>
                                         <ul className="list-disc pl-5 mt-2 space-y-1 text-xs">
-                                            <li>Admin Paneli eklendi (Canlı istatistikler, Kullanıcı Takibi).</li>
-                                            <li>Veritabanı bağlantısı hızlandırıldı.</li>
-                                            <li>Kayıt ve Giriş ekranları yenilendi.</li>
-                                            <li>Şifremi unuttum özelliği eklendi.</li>
+                                            <li>Özel tasarım kaydırma çubukları eklendi.</li>
+                                            <li>Satış Hedefleri için modern açılır menü (searchable dropdown) eklendi.</li>
+                                            <li>Arayüz genelinde görsel iyileştirmeler yapıldı.</li>
                                         </ul>
                                     </div>
-                                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                                        <div className="font-bold text-zinc-500">v1.0.0</div>
+                                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 opacity-70">
+                                        <div className="font-bold text-zinc-500">v1.0.6</div>
                                         <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-zinc-500">
-                                            <li>Marka kimliği <strong>RASYON</strong> olarak güncellendi.</li>
-                                            <li>Giriş ekranı (İşletme Yetkilisi) eklendi.</li>
+                                            <li>Para birimi formatı standartlaştırıldı (102.204,00 ₺).</li>
+                                            <li>Reçete kartlarındaki çarpan değeri yuvarlandı.</li>
+                                            <li>Sürüm numarası dinamik hale getirildi.</li>
+                                        </ul>
+                                    </div>
+                                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 opacity-50">
+                                        <div className="font-bold text-zinc-500">v1.0.4</div>
+                                        <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-zinc-500">
+                                            <li>Admin Paneli eklendi (Canlı istatistikler, Kullanıcı Takibi).</li>
+                                            <li>Kayıt ve Giriş ekranları yenilendi.</li>
                                         </ul>
                                     </div>
                                 </div>
