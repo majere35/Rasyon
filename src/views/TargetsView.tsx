@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
-import { Plus, Trash2, Package, Save, X, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Package, Save, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { CustomSelect } from '../components/CustomSelect';
 import { formatCurrency } from '../lib/utils';
 import type { SalesTarget, Expense } from '../types';
 
@@ -141,18 +142,12 @@ export function TargetsView() {
                                     return (
                                         <tr key={target.id} className="group hover:bg-zinc-800/30 transition-colors">
                                             <td className="px-4 py-3">
-                                                <div className="relative group/select">
-                                                    <select
-                                                        value={target.recipeId}
-                                                        onChange={(e) => updateSalesTarget(target.id, { ...target, recipeId: e.target.value })}
-                                                        className="appearance-none bg-zinc-800/50 text-white font-medium focus:outline-none w-full cursor-pointer hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-lg pr-8 text-ellipsis overflow-hidden border border-transparent focus:border-indigo-500/50"
-                                                    >
-                                                        {recipes.map(r => (
-                                                            <option key={r.id} value={r.id} className="bg-zinc-900 text-zinc-300">{r.name}</option>
-                                                        ))}
-                                                    </select>
-                                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-hover/select:text-indigo-400 transition-colors" />
-                                                </div>
+                                                <CustomSelect
+                                                    value={target.recipeId}
+                                                    onChange={(val) => updateSalesTarget(target.id, { ...target, recipeId: val })}
+                                                    options={recipes.map(r => ({ label: r.name, value: r.id }))}
+                                                    searchable={recipes.length > 5}
+                                                />
                                             </td>
                                             {/* Order: Unit Cost -> Qty -> Total Cost -> Unit Price -> Total Revenue -> Cost % */}
                                             <td className="px-2 py-3 text-right text-zinc-400 font-mono text-xs">
