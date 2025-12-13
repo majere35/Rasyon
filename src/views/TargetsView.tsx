@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Plus, Trash2, Package, Save, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { CustomSelect } from '../components/CustomSelect';
+import { NumberInput } from '../components/NumberInput';
 import { formatCurrency } from '../lib/utils';
 import type { SalesTarget, Expense } from '../types';
 
@@ -18,21 +19,27 @@ export function TargetsView() {
     const [editPkgAmount, setEditPkgAmount] = useState('');
 
     // Calculate Totals
-    const totalDailyItems = salesTargets.reduce((sum, target) => sum + target.dailyTarget, 0);
+    const totalDailyItems = salesTargets.reduce((sum, target) => sum + (target.dailyTarget || 0) + (target.packageDailyTarget || 0), 0);
 
     const totalDailyRevenue = salesTargets.reduce((sum, target) => {
         const recipe = recipes.find(r => r.id === target.recipeId);
-        return sum + (recipe ? recipe.calculatedPrice * target.dailyTarget : 0);
+        const qty = (target.dailyTarget || 0) + (target.packageDailyTarget || 0);
+        return sum + (recipe ? recipe.calculatedPrice * qty : 0);
     }, 0);
 
     const totalDailyCost = salesTargets.reduce((sum, target) => {
         const recipe = recipes.find(r => r.id === target.recipeId);
-        return sum + (recipe ? recipe.totalCost * target.dailyTarget : 0);
+        const qty = (target.dailyTarget || 0) + (target.packageDailyTarget || 0);
+        return sum + (recipe ? recipe.totalCost * qty : 0);
     }, 0);
 
     // Packaging Cost Per Order (sum of unit costs of all packaging items)
     const packagingCostPerOrder = (packagingCosts || []).reduce((sum, item) => sum + item.amount, 0);
-    const totalDailyPackagingCost = totalDailyItems * packagingCostPerOrder;
+
+    // UPDATED CHECK: Only apply packaging cost to PACKAGE QUANTITY (packageDailyTarget)
+    const totalDailyPackagingCost = salesTargets.reduce((sum, target) => {
+        return sum + ((target.packageDailyTarget || 0) * packagingCostPerOrder);
+    }, 0);
 
     const totalDailyProfit = totalDailyRevenue - totalDailyCost - totalDailyPackagingCost;
     const avgRevenuePerItem = totalDailyItems > 0 ? totalDailyRevenue / totalDailyItems : 0;
@@ -43,7 +50,8 @@ export function TargetsView() {
         const newTarget: SalesTarget = {
             id: crypto.randomUUID(),
             recipeId: recipes[0].id,
-            dailyTarget: 1
+            dailyTarget: 1, // Default Restaurant Qty
+            packageDailyTarget: 0 // Default Package Qty
         };
         addSalesTarget(newTarget);
     };
@@ -116,18 +124,19 @@ export function TargetsView() {
                             </button>
                         </div>
 
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full text-left text-sm table-fixed">
                             <thead className="bg-zinc-900/50 text-zinc-400 font-medium border-b border-zinc-800">
                                 <tr>
-                                    {/* Optimization: Allow Product Name to take most space */}
-                                    <th className="px-4 py-3 w-1/3">Ürün Adı</th>
-                                    <th className="px-2 py-3 text-right whitespace-nowrap">Brm. Maliyet</th>
-                                    <th className="px-2 py-3 text-center whitespace-nowrap">Günlük Adet</th>
-                                    <th className="px-2 py-3 text-right whitespace-nowrap">Topl. Maliyet</th>
-                                    <th className="px-2 py-3 text-right whitespace-nowrap">Birim Fiyat</th>
-                                    <th className="px-2 py-3 text-right whitespace-nowrap">Toplam Ciro</th>
-                                    <th className="px-2 py-3 text-right whitespace-nowrap">Mal. %</th>
-                                    <th className="px-2 py-3 w-10"></th>
+                                    {/* Optimization: Fixed widths using precise percentages to sum to ~100% */}
+                                    <th className="px-4 py-3 w-[25%]">Ürün Adı</th>
+                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[10%]">Brm. Mal.</th>
+                                    <th className="px-1 py-3 text-center whitespace-nowrap text-xs w-[10%]">Rest. Adet</th>
+                                    <th className="px-1 py-3 text-center whitespace-nowrap text-xs w-[10%]">Pkt. Adet</th>
+                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[12%]">Topl. Mal.</th>
+                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[12%]">Brm. Fiyat</th>
+                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[12%]">Ciro</th>
+                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[5%]">Mal. %</th>
+                                    <th className="px-1 py-3 w-[4%]"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-800">
@@ -135,8 +144,23 @@ export function TargetsView() {
                                     const recipe = recipes.find(r => r.id === target.recipeId);
                                     if (!recipe) return null;
 
-                                    const totalCost = recipe.totalCost * target.dailyTarget;
-                                    const totalRevenue = recipe.calculatedPrice * target.dailyTarget;
+                                    const restaurantQty = target.dailyTarget || 0;
+                                    const packageQty = target.packageDailyTarget || 0;
+                                    const totalQty = restaurantQty + packageQty;
+
+                                    // Cost Calculation:
+                                    // Base Cost = (Rest Qty + Pkg Qty) * Recipe Unit Cost
+                                    // Pkg Cost for this line (implicit) = Pkg Qty * Global Pkg Cost (handled in summary mostly, but for line total we might want to be careful)
+                                    // The user request: "birim başı ambalaj maliyeti sadece 'paket adet'ile ilişkili olacak."
+                                    // Usually "Topl. Maliyet" here refers to Ingredient Cost. 
+                                    // The summary handles the Packaging Cost separately.
+                                    // So here: Total Cost = totalQty * recipe.totalCost.
+
+                                    const totalCost = recipe.totalCost * totalQty;
+                                    const totalRevenue = recipe.calculatedPrice * totalQty;
+
+                                    // Cost % for this line (Ingredient cost only usually, or should we include pkg?)
+                                    // Standard practice: Line item cost % usually just ingredients vs price. 
                                     const costPercent = totalRevenue > 0 ? (totalCost / totalRevenue) * 100 : 0;
 
                                     return (
@@ -150,30 +174,37 @@ export function TargetsView() {
                                                 />
                                             </td>
                                             {/* Order: Unit Cost -> Qty -> Total Cost -> Unit Price -> Total Revenue -> Cost % */}
-                                            <td className="px-2 py-3 text-right text-zinc-400 font-mono text-xs">
+                                            <td className="px-1 py-3 text-right text-zinc-400 font-mono text-xs">
                                                 {formatCurrency(recipe.totalCost)}
                                             </td>
-                                            <td className="px-2 py-3 text-center">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    value={target.dailyTarget}
-                                                    onChange={(e) => updateSalesTarget(target.id, { ...target, dailyTarget: parseInt(e.target.value) || 0 })}
-                                                    onFocus={(e) => e.target.select()}
-                                                    className="w-16 bg-zinc-800 rounded px-1 py-1 text-center font-bold text-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                                            <td className="px-1 py-3 text-center">
+                                                <NumberInput
+                                                    min={0}
+                                                    value={target.dailyTarget} // Maps to Restaurant Quantity now
+                                                    onChange={(val) => updateSalesTarget(target.id, { ...target, dailyTarget: val || 0 })}
+                                                    className="w-full max-w-[80px] mx-auto"
+                                                    placeholder="R"
                                                 />
                                             </td>
-                                            <td className="px-2 py-3 text-right text-red-300 font-mono text-xs">
+                                            <td className="px-1 py-3 text-center">
+                                                <NumberInput
+                                                    min={0}
+                                                    value={target.packageDailyTarget || 0}
+                                                    onChange={(val) => updateSalesTarget(target.id, { ...target, packageDailyTarget: val || 0 })}
+                                                    className="w-full max-w-[80px] mx-auto"
+                                                    placeholder="P"
+                                                />
+                                            </td>
+                                            <td className="px-1 py-3 text-right text-red-300 font-mono text-xs truncate">
                                                 {formatCurrency(totalCost)}
                                             </td>
-                                            <td className="px-2 py-3 text-right text-zinc-200 font-mono">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
+                                            <td className="px-1 py-3 text-right text-zinc-200 font-mono">
+                                                <NumberInput
+                                                    min={0}
+                                                    step={0.01}
                                                     value={recipe.calculatedPrice}
-                                                    onChange={(e) => {
-                                                        const newPrice = parseFloat(e.target.value);
+                                                    onChange={(val) => {
+                                                        const newPrice = val;
                                                         if (!isNaN(newPrice)) {
                                                             const newMultiplier = recipe.totalCost > 0 ? newPrice / recipe.totalCost : 0;
                                                             updateRecipe(recipe.id, {
@@ -183,17 +214,16 @@ export function TargetsView() {
                                                             });
                                                         }
                                                     }}
-                                                    onFocus={(e) => e.target.select()}
-                                                    className="w-20 bg-zinc-800 rounded px-1 py-1 text-right font-medium text-white focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                    className="w-full"
                                                 />
                                             </td>
-                                            <td className="px-2 py-3 text-right font-mono text-green-400 font-medium text-xs">
+                                            <td className="px-1 py-3 text-right font-mono text-green-400 font-medium text-xs truncate">
                                                 {formatCurrency(totalRevenue)}
                                             </td>
-                                            <td className="px-2 py-3 text-right text-zinc-500 text-xs">
+                                            <td className="px-1 py-3 text-right text-zinc-500 text-xs">
                                                 %{costPercent.toFixed(0)}
                                             </td>
-                                            <td className="px-2 py-3 text-center">
+                                            <td className="px-1 py-3 text-center">
                                                 <button
                                                     onClick={() => removeSalesTarget(target.id)}
                                                     className="text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
@@ -206,7 +236,7 @@ export function TargetsView() {
                                 })}
                                 {salesTargets.length === 0 && (
                                     <tr>
-                                        <td colSpan={8} className="px-6 py-12 text-center text-zinc-500">
+                                        <td colSpan={9} className="px-6 py-12 text-center text-zinc-500">
                                             Henüz satış hedefi eklenmedi.
                                         </td>
                                     </tr>
@@ -224,10 +254,10 @@ export function TargetsView() {
                             </h3>
                         </div>
 
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             {/* Existing Items */}
                             {packagingCosts.map((item) => (
-                                <div key={item.id} className="flex items-center gap-3 bg-zinc-900 border border-zinc-800/50 p-2 rounded-lg group">
+                                <div key={item.id} className="flex items-center gap-3 bg-zinc-900 border border-zinc-800/50 p-1.5 rounded-lg group">
                                     {editingPkgId === item.id ? (
                                         <div className="flex-1 flex items-center gap-2">
                                             <input
@@ -236,7 +266,7 @@ export function TargetsView() {
                                                 value={editPkgName}
                                                 onChange={(e) => setEditPkgName(e.target.value)}
                                                 onFocus={(e) => e.target.select()}
-                                                className="flex-1 bg-zinc-800 text-white px-2 py-1 rounded border border-indigo-500/50 outline-none"
+                                                className="flex-1 bg-zinc-800 text-white px-2 py-1 rounded border border-indigo-500/50 outline-none text-xs"
                                                 onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
                                             />
                                             <input
@@ -244,20 +274,20 @@ export function TargetsView() {
                                                 value={editPkgAmount}
                                                 onChange={(e) => setEditPkgAmount(e.target.value)}
                                                 onFocus={(e) => e.target.select()}
-                                                className="w-24 bg-zinc-800 text-white text-right px-2 py-1 rounded border border-indigo-500/50 outline-none font-mono"
+                                                className="w-20 bg-zinc-800 text-white text-right px-2 py-1 rounded border border-indigo-500/50 outline-none font-mono text-xs"
                                                 onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
                                             />
                                             <button
                                                 onClick={saveEditingPkg}
-                                                className="p-1.5 bg-green-900/50 text-green-400 hover:text-white rounded"
+                                                className="p-1 bg-green-900/50 text-green-400 hover:text-white rounded"
                                             >
-                                                <Save size={16} />
+                                                <Save size={14} />
                                             </button>
                                             <button
                                                 onClick={() => setEditingPkgId(null)}
-                                                className="p-1.5 text-zinc-500 hover:text-white rounded"
+                                                className="p-1 text-zinc-500 hover:text-white rounded"
                                             >
-                                                <X size={16} />
+                                                <X size={14} />
                                             </button>
                                         </div>
                                     ) : (
@@ -266,15 +296,15 @@ export function TargetsView() {
                                                 className="flex-1 flex items-center justify-between px-2 cursor-pointer hover:bg-zinc-800/50 rounded transition-colors"
                                                 onClick={() => startEditingPkg(item)}
                                             >
-                                                <span className="text-zinc-200 font-medium">{item.name}</span>
-                                                <span className="font-mono text-orange-400">-{formatCurrency(item.amount)}</span>
+                                                <span className="text-zinc-300 font-medium text-xs">{item.name}</span>
+                                                <span className="font-mono text-orange-400 text-xs">-{formatCurrency(item.amount)}</span>
                                             </div>
                                             <button
                                                 onClick={() => removePackagingCost(item.id)}
-                                                className="p-2 hover:bg-zinc-800 rounded text-zinc-600 hover:text-red-400 transition-colors"
+                                                className="p-1.5 hover:bg-zinc-800 rounded text-zinc-600 hover:text-red-400 transition-colors"
                                                 title="Sil"
                                             >
-                                                <Trash2 size={16} />
+                                                <Trash2 size={14} />
                                             </button>
                                         </>
                                     )}
@@ -282,7 +312,7 @@ export function TargetsView() {
                             ))}
 
                             {/* Inline Add Row */}
-                            <div className="flex items-center gap-2 bg-zinc-800/20 p-2 rounded-lg border border-zinc-800 border-dashed">
+                            <div className="flex items-center gap-2 bg-zinc-800/20 p-1.5 rounded-lg border border-zinc-800 border-dashed">
                                 <input
                                     ref={nameRef}
                                     type="text"
@@ -290,27 +320,27 @@ export function TargetsView() {
                                     onChange={(e) => setNewPkgName(e.target.value)}
                                     placeholder="Yeni Malzeme (Örn: Paket)"
                                     onFocus={(e) => e.target.select()}
-                                    className="flex-1 bg-transparent border-b border-zinc-700 focus:border-indigo-500 px-2 py-1 text-white placeholder-zinc-600 focus:outline-none transition-colors text-sm"
+                                    className="flex-1 bg-transparent border-b border-zinc-700/50 focus:border-indigo-500 px-2 py-0.5 text-white placeholder-zinc-600 focus:outline-none transition-colors text-xs"
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddPackaging()}
                                 />
-                                <div className="relative w-24">
+                                <div className="relative w-20">
                                     <input
                                         type="number"
                                         value={newPkgAmount}
                                         onChange={(e) => setNewPkgAmount(e.target.value)}
                                         placeholder="0.00"
                                         onFocus={(e) => e.target.select()}
-                                        className="w-full bg-transparent border-b border-zinc-700 focus:border-indigo-500 px-2 py-1 text-white placeholder-zinc-600 focus:outline-none transition-colors text-right text-sm font-mono"
+                                        className="w-full bg-transparent border-b border-zinc-700/50 focus:border-indigo-500 px-2 py-0.5 text-white placeholder-zinc-600 focus:outline-none transition-colors text-right text-xs font-mono"
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddPackaging()}
                                     />
-                                    <span className="absolute right-0 top-1 text-zinc-500 text-xs pointer-events-none">₺</span>
+                                    <span className="absolute right-0 top-0.5 text-zinc-500 text-[10px] pointer-events-none">₺</span>
                                 </div>
                                 <button
                                     onClick={handleAddPackaging}
                                     disabled={!newPkgName || !newPkgAmount}
-                                    className="p-1.5 bg-zinc-800 hover:bg-indigo-600 disabled:opacity-50 disabled:hover:bg-zinc-800 text-white rounded transition-colors"
+                                    className="p-1 bg-zinc-800 hover:bg-indigo-600 disabled:opacity-50 disabled:hover:bg-zinc-800 text-white rounded transition-colors"
                                 >
-                                    <Plus size={18} />
+                                    <Plus size={14} />
                                 </button>
                             </div>
 

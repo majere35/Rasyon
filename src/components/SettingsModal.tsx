@@ -147,9 +147,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                                             {APP_VERSION} <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 px-2 py-0.5 rounded">GÜNCEL</span>
                                         </div>
                                         <ul className="list-disc pl-5 mt-2 space-y-1 text-xs">
-                                            <li>Özel tasarım kaydırma çubukları eklendi.</li>
-                                            <li>Satış Hedefleri için modern açılır menü (searchable dropdown) eklendi.</li>
-                                            <li>Arayüz genelinde görsel iyileştirmeler yapıldı.</li>
+                                            <li>Satış Hedefleri: "Günlük Adet" → "Restoran" ve "Paket" olarak ayrıldı.</li>
+                                            <li>Ambalaj maliyeti sadece paket satışlarına yansıtılacak şekilde güncellendi.</li>
+                                            <li>Tablo düzeni sabitlendi, büyük sayılarda kayma sorunu giderildi.</li>
+                                            <li>Sayı girişleri (input) için özel tasarım (oklar) eklendi.</li>
+                                            <li>Açılır menülerde taşma sorunu (clipping) düzeltildi.</li>
                                         </ul>
                                     </div>
                                     <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 opacity-70">

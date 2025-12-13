@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, Save, Upload, Image as ImageIcon } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { NumberInput } from './NumberInput';
 import type { Recipe, Ingredient } from '../types';
 
 interface AddRecipeModalProps {
@@ -260,11 +261,11 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                     />
                                                 </td>
                                                 <td className="p-2">
-                                                    <input
-                                                        type="number"
+                                                    <NumberInput
                                                         value={item.quantity}
-                                                        onChange={(e) => updateIngredient(index, 'quantity', parseFloat(e.target.value) || 0)}
-                                                        className="w-full bg-zinc-800/50 rounded px-2 py-1 text-center text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 text-sm"
+                                                        onChange={(val) => updateIngredient(index, 'quantity', val)}
+                                                        className="w-full"
+                                                        placeholder="0"
                                                     />
                                                 </td>
                                                 <td className="p-2">
@@ -281,11 +282,12 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                     </select>
                                                 </td>
                                                 <td className="p-2">
-                                                    <input
-                                                        type="number"
+                                                    <NumberInput
                                                         value={item.price}
-                                                        onChange={(e) => updateIngredient(index, 'price', parseFloat(e.target.value) || 0)}
-                                                        className="w-full bg-zinc-800/50 rounded px-2 py-1 text-right text-zinc-200 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 text-sm"
+                                                        onChange={(val) => updateIngredient(index, 'price', val)}
+                                                        className="w-full"
+                                                        placeholder="0.00"
+                                                        step={0.1}
                                                     />
                                                 </td>
                                                 <td className="p-2 text-right font-mono text-zinc-400 text-sm">

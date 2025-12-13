@@ -20,6 +20,7 @@ export interface SalesTarget {
     id: string;
     recipeId: string;
     dailyTarget: number;
+    packageDailyTarget?: number; // New field for Package Quantity
 }
 
 export interface Expense {
