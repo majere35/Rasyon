@@ -1,4 +1,5 @@
 import { Trash2, Edit2, TrendingUp } from 'lucide-react';
+import { formatCurrency, formatNumber } from '../lib/utils';
 import type { Recipe } from '../types';
 
 interface RecipeCardProps {
@@ -64,19 +65,19 @@ export function RecipeCard({ recipe, onEdit, onDelete }: RecipeCardProps) {
                 <div className="space-y-2 mt-auto">
                     <div className="flex justify-between items-center text-sm">
                         <span className="text-zinc-500">Maliyet</span>
-                        <span className="font-mono text-zinc-300">{recipe.totalCost.toFixed(2)} ₺</span>
+                        <span className="font-mono text-zinc-300">{formatCurrency(recipe.totalCost)}</span>
                     </div>
 
                     <div className="flex justify-between items-center text-sm border-t border-zinc-700/50 pt-2">
                         <span className="text-zinc-500">Satış</span>
-                        <span className="font-mono text-green-400 font-bold">{recipe.calculatedPrice.toFixed(2)} ₺</span>
+                        <span className="font-mono text-green-400 font-bold">{formatCurrency(recipe.calculatedPrice)}</span>
                     </div>
                 </div>
             </div>
 
             <div className="bg-zinc-900/40 px-4 py-2 flex justify-between items-center text-xs">
                 <span className="bg-zinc-700/30 px-1.5 py-0.5 rounded text-zinc-400">
-                    x{recipe.costMultiplier}
+                    x{formatNumber(recipe.costMultiplier || 0)}
                 </span>
                 <div className="flex items-center gap-1 text-indigo-400 font-medium">
                     <TrendingUp size={12} />
@@ -86,3 +87,4 @@ export function RecipeCard({ recipe, onEdit, onDelete }: RecipeCardProps) {
         </div>
     );
 }
+

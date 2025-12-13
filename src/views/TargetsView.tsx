@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
-import { Plus, Trash2, Package, Save, X } from 'lucide-react';
+import { Plus, Trash2, Package, Save, X, ChevronDown } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { formatCurrency } from '../lib/utils';
 import type { SalesTarget, Expense } from '../types';
 
 export function TargetsView() {
@@ -41,7 +42,7 @@ export function TargetsView() {
         const newTarget: SalesTarget = {
             id: crypto.randomUUID(),
             recipeId: recipes[0].id,
-            dailyTarget: 10
+            dailyTarget: 1
         };
         addSalesTarget(newTarget);
     };
@@ -140,19 +141,22 @@ export function TargetsView() {
                                     return (
                                         <tr key={target.id} className="group hover:bg-zinc-800/30 transition-colors">
                                             <td className="px-4 py-3">
-                                                <select
-                                                    value={target.recipeId}
-                                                    onChange={(e) => updateSalesTarget(target.id, { ...target, recipeId: e.target.value })}
-                                                    className="bg-transparent text-white font-medium focus:outline-none w-full cursor-pointer hover:text-indigo-400 text-ellipsis overflow-hidden"
-                                                >
-                                                    {recipes.map(r => (
-                                                        <option key={r.id} value={r.id} className="bg-zinc-800">{r.name}</option>
-                                                    ))}
-                                                </select>
+                                                <div className="relative group/select">
+                                                    <select
+                                                        value={target.recipeId}
+                                                        onChange={(e) => updateSalesTarget(target.id, { ...target, recipeId: e.target.value })}
+                                                        className="appearance-none bg-zinc-800/50 text-white font-medium focus:outline-none w-full cursor-pointer hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-lg pr-8 text-ellipsis overflow-hidden border border-transparent focus:border-indigo-500/50"
+                                                    >
+                                                        {recipes.map(r => (
+                                                            <option key={r.id} value={r.id} className="bg-zinc-900 text-zinc-300">{r.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-hover/select:text-indigo-400 transition-colors" />
+                                                </div>
                                             </td>
                                             {/* Order: Unit Cost -> Qty -> Total Cost -> Unit Price -> Total Revenue -> Cost % */}
-                                            <td className="px-2 py-3 text-right text-zinc-400 font-mono">
-                                                {recipe.totalCost.toFixed(2)}
+                                            <td className="px-2 py-3 text-right text-zinc-400 font-mono text-xs">
+                                                {formatCurrency(recipe.totalCost)}
                                             </td>
                                             <td className="px-2 py-3 text-center">
                                                 <input
@@ -160,11 +164,12 @@ export function TargetsView() {
                                                     min="0"
                                                     value={target.dailyTarget}
                                                     onChange={(e) => updateSalesTarget(target.id, { ...target, dailyTarget: parseInt(e.target.value) || 0 })}
+                                                    onFocus={(e) => e.target.select()}
                                                     className="w-16 bg-zinc-800 rounded px-1 py-1 text-center font-bold text-white focus:ring-1 focus:ring-indigo-500 outline-none"
                                                 />
                                             </td>
-                                            <td className="px-2 py-3 text-right text-red-300 font-mono">
-                                                {totalCost.toFixed(2)}
+                                            <td className="px-2 py-3 text-right text-red-300 font-mono text-xs">
+                                                {formatCurrency(totalCost)}
                                             </td>
                                             <td className="px-2 py-3 text-right text-zinc-200 font-mono">
                                                 <input
@@ -183,11 +188,12 @@ export function TargetsView() {
                                                             });
                                                         }
                                                     }}
+                                                    onFocus={(e) => e.target.select()}
                                                     className="w-20 bg-zinc-800 rounded px-1 py-1 text-right font-medium text-white focus:ring-1 focus:ring-indigo-500 outline-none"
                                                 />
                                             </td>
-                                            <td className="px-2 py-3 text-right font-mono text-green-400 font-medium">
-                                                {totalRevenue.toFixed(2)}
+                                            <td className="px-2 py-3 text-right font-mono text-green-400 font-medium text-xs">
+                                                {formatCurrency(totalRevenue)}
                                             </td>
                                             <td className="px-2 py-3 text-right text-zinc-500 text-xs">
                                                 %{costPercent.toFixed(0)}
@@ -234,6 +240,7 @@ export function TargetsView() {
                                                 type="text"
                                                 value={editPkgName}
                                                 onChange={(e) => setEditPkgName(e.target.value)}
+                                                onFocus={(e) => e.target.select()}
                                                 className="flex-1 bg-zinc-800 text-white px-2 py-1 rounded border border-indigo-500/50 outline-none"
                                                 onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
                                             />
@@ -241,6 +248,7 @@ export function TargetsView() {
                                                 type="number"
                                                 value={editPkgAmount}
                                                 onChange={(e) => setEditPkgAmount(e.target.value)}
+                                                onFocus={(e) => e.target.select()}
                                                 className="w-24 bg-zinc-800 text-white text-right px-2 py-1 rounded border border-indigo-500/50 outline-none font-mono"
                                                 onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
                                             />
@@ -264,7 +272,7 @@ export function TargetsView() {
                                                 onClick={() => startEditingPkg(item)}
                                             >
                                                 <span className="text-zinc-200 font-medium">{item.name}</span>
-                                                <span className="font-mono text-orange-400">-{item.amount.toFixed(2)} ₺</span>
+                                                <span className="font-mono text-orange-400">-{formatCurrency(item.amount)}</span>
                                             </div>
                                             <button
                                                 onClick={() => removePackagingCost(item.id)}
@@ -286,6 +294,7 @@ export function TargetsView() {
                                     value={newPkgName}
                                     onChange={(e) => setNewPkgName(e.target.value)}
                                     placeholder="Yeni Malzeme (Örn: Paket)"
+                                    onFocus={(e) => e.target.select()}
                                     className="flex-1 bg-transparent border-b border-zinc-700 focus:border-indigo-500 px-2 py-1 text-white placeholder-zinc-600 focus:outline-none transition-colors text-sm"
                                     onKeyDown={(e) => e.key === 'Enter' && handleAddPackaging()}
                                 />
@@ -295,6 +304,7 @@ export function TargetsView() {
                                         value={newPkgAmount}
                                         onChange={(e) => setNewPkgAmount(e.target.value)}
                                         placeholder="0.00"
+                                        onFocus={(e) => e.target.select()}
                                         className="w-full bg-transparent border-b border-zinc-700 focus:border-indigo-500 px-2 py-1 text-white placeholder-zinc-600 focus:outline-none transition-colors text-right text-sm font-mono"
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddPackaging()}
                                     />
@@ -311,7 +321,7 @@ export function TargetsView() {
 
                             <div className="flex justify-between items-center pt-2 border-t border-zinc-800 mt-2">
                                 <span className="text-sm text-zinc-400">Toplam Ambalaj (Birim Başı)</span>
-                                <span className="font-mono text-orange-400 font-bold">-{packagingCostPerOrder.toFixed(2)} ₺</span>
+                                <span className="font-mono text-orange-400 font-bold">-{formatCurrency(packagingCostPerOrder)}</span>
                             </div>
                         </div>
                     </div>
@@ -329,26 +339,26 @@ export function TargetsView() {
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-zinc-400">Ort. Ürün Geliri</span>
-                                <span className="text-white font-mono">{avgRevenuePerItem.toFixed(2)} ₺</span>
+                                <span className="text-white font-mono">{formatCurrency(avgRevenuePerItem)}</span>
                             </div>
                             <div className="w-full h-px bg-white/10 my-2"></div>
                             <div className="flex justify-between">
                                 <span className="text-zinc-400">Toplam Ciro</span>
-                                <span className="text-green-400 font-bold font-mono text-lg">{totalDailyRevenue.toFixed(2)} ₺</span>
+                                <span className="text-green-400 font-bold font-mono text-lg">{formatCurrency(totalDailyRevenue)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-zinc-400">Ürün Maliyeti</span>
-                                <span className="text-red-400 font-mono">-{totalDailyCost.toFixed(2)} ₺</span>
+                                <span className="text-red-400 font-mono">-{formatCurrency(totalDailyCost)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-zinc-400">Ambalaj Maliyeti</span>
-                                <span className="text-orange-400 font-mono">-{totalDailyPackagingCost.toFixed(2)} ₺</span>
+                                <span className="text-orange-400 font-mono">-{formatCurrency(totalDailyPackagingCost)}</span>
                             </div>
                             <div className="w-full h-px bg-white/10 my-2"></div>
                             <div className="flex justify-between items-end">
                                 <span className="text-zinc-200 font-bold">Net Kâr</span>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-white font-mono">{totalDailyProfit.toFixed(2)} ₺</div>
+                                    <div className="text-2xl font-bold text-white font-mono">{formatCurrency(totalDailyProfit)}</div>
                                     <div className="text-xs text-indigo-300 mt-1">Maliyet: %{avgCostPercentage.toFixed(1)}</div>
                                 </div>
                             </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Trash2, TrendingUp, Calendar, Plus, X, Building2, Factory, Truck, Users, PenLine } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { formatCurrency } from '../lib/utils';
 import { TaxSummary } from '../components/TaxSummary';
 import type { Expense } from '../types';
 
@@ -288,7 +289,7 @@ export function BalanceView() {
                                             %{groupRevenueShare.toFixed(1)} Ciro
                                         </span>
                                         <span className="font-mono text-zinc-400 text-sm font-medium">
-                                            -{groupTotal.toFixed(2)} ₺
+                                            -{formatCurrency(groupTotal)}
                                         </span>
                                     </div>
                                 </div>
@@ -318,6 +319,7 @@ export function BalanceView() {
                                                                     onChange={e => setTempValue(e.target.value)}
                                                                     onBlur={() => saveEdit(expense)}
                                                                     onKeyDown={e => e.key === 'Enter' && saveEdit(expense)}
+                                                                    onFocus={(e) => e.target.select()}
                                                                 />
                                                             ) : (
                                                                 <span
@@ -341,13 +343,14 @@ export function BalanceView() {
                                                                             onChange={e => setTempValue(e.target.value)}
                                                                             onBlur={() => saveEdit(expense)}
                                                                             onKeyDown={e => e.key === 'Enter' && saveEdit(expense)}
+                                                                            onFocus={(e) => e.target.select()}
                                                                         />
                                                                     ) : (
                                                                         <span
                                                                             className="text-xs text-zinc-500 cursor-pointer hover:text-white border-b border-dashed border-zinc-700 hover:border-zinc-500"
                                                                             onClick={() => startEditing(expense, 'amount')}
                                                                         >
-                                                                            {expense.amount} ₺/pkt
+                                                                            {formatCurrency(expense.amount).replace('₺', '')} ₺/pkt
                                                                         </span>
                                                                     )}
                                                                 </>
@@ -363,6 +366,7 @@ export function BalanceView() {
                                                                 onChange={e => setTempValue(e.target.value)}
                                                                 onBlur={() => saveEdit(expense)}
                                                                 onKeyDown={e => e.key === 'Enter' && saveEdit(expense)}
+                                                                onFocus={(e) => e.target.select()}
                                                             />
                                                         ) : (
                                                             <span
@@ -399,6 +403,7 @@ export function BalanceView() {
                                                                 onChange={e => setTempValue(e.target.value)}
                                                                 onBlur={() => saveEdit(expense)}
                                                                 onKeyDown={(e) => handleKeyDown(e, expense, currentIndex)}
+                                                                onFocus={(e) => e.target.select()}
                                                             />
                                                         </div>
                                                     ) : (
@@ -407,7 +412,7 @@ export function BalanceView() {
                                                             className={`font-mono text-sm w-24 text-right ${!expense.isAutomated ? 'text-zinc-300 cursor-pointer hover:text-white border-b border-transparent hover:border-zinc-500' : 'text-zinc-500'}`}
                                                             onClick={() => !expense.isAutomated && startEditing(expense, 'amount')}
                                                         >
-                                                            -{expense.finalAmount.toFixed(2)} ₺
+                                                            -{formatCurrency(expense.finalAmount)}
                                                         </span>
                                                     )}
 
@@ -437,6 +442,7 @@ export function BalanceView() {
                                                 value={newName}
                                                 onChange={e => setNewName(e.target.value)}
                                                 onKeyDown={e => e.key === 'Enter' && handleAdd(group.id)}
+                                                onFocus={(e) => e.target.select()}
                                             />
                                             <input
                                                 type="number"
@@ -445,6 +451,7 @@ export function BalanceView() {
                                                 value={newAmount}
                                                 onChange={e => setNewAmount(e.target.value)}
                                                 onKeyDown={e => e.key === 'Enter' && handleAdd(group.id)}
+                                                onFocus={(e) => e.target.select()}
                                             />
                                             <button onClick={() => setAddingGroup(null)} className="p-1 hover:bg-zinc-800 rounded"><X size={14} /></button>
                                         </div>
@@ -484,23 +491,23 @@ export function BalanceView() {
                         <div className="space-y-3 relative">
                             <div className="flex justify-between items-baseline mb-4">
                                 <span className="text-zinc-400">Tahmini Aylık Ciro</span>
-                                <span className="text-green-400 font-bold font-mono text-2xl">{monthlyRevenue.toFixed(2)} ₺</span>
+                                <span className="text-green-400 font-bold font-mono text-2xl">{formatCurrency(monthlyRevenue)}</span>
                             </div>
 
                             <div className="space-y-1 text-sm border-t border-zinc-800/50 pt-3">
                                 <div className="flex justify-between">
                                     <span className="text-zinc-500">Net Kâr (Vergi Öncesi)</span>
                                     <span className={`font-mono font-bold ${netProfit >= 0 ? 'text-white' : 'text-red-500'}`}>
-                                        {netProfit.toFixed(2)} ₺
+                                        {formatCurrency(netProfit)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-xs">
                                     <span className="text-zinc-600">Ödenecek Vergi (Tahmini)</span>
-                                    <span className="text-red-400/70 font-mono">-{incomeTax.toFixed(2)} ₺</span>
+                                    <span className="text-red-400/70 font-mono">-{formatCurrency(incomeTax)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs">
                                     <span className="text-zinc-600">Ödenecek KDV (Tahmini)</span>
-                                    <span className="text-red-400/70 font-mono">-{payableVat.toFixed(2)} ₺</span>
+                                    <span className="text-red-400/70 font-mono">-{formatCurrency(payableVat)}</span>
                                 </div>
                             </div>
 
@@ -508,7 +515,7 @@ export function BalanceView() {
                                 <div className="flex flex-col gap-1 items-end">
                                     <span className="text-sm font-bold text-zinc-400">Vergi Sonrası Net Kâr</span>
                                     <div className={`text-3xl font-bold font-mono ${trueNetCash >= 0 ? 'text-indigo-400' : 'text-red-500'}`}>
-                                        {trueNetCash.toFixed(2)} ₺
+                                        {formatCurrency(trueNetCash)}
                                     </div>
                                     <span className="text-[10px] text-zinc-500">Vergiler ve KDV ödendikten sonra kalan</span>
                                 </div>

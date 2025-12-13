@@ -1,6 +1,8 @@
+
 import { useState } from 'react';
 import { X, Moon, Sun, ScrollText, Book } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { APP_VERSION } from '../config';
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -62,13 +64,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <ScrollText size={20} className="text-blue-500 dark:text-blue-400" />
                             <div>
                                 <div className="font-medium text-zinc-900 dark:text-white">Sürüm Notları</div>
-                                <div className="text-xs text-zinc-500">v1.0.0 değişiklikleri</div>
+                                <div className="text-xs text-zinc-500">{APP_VERSION} changes</div>
                             </div>
                         </button>
                     </div>
 
                     <div className="mt-8 text-center border-t border-zinc-200 dark:border-zinc-800 pt-4">
-                        <div className="text-xs font-bold text-zinc-900 dark:text-white mb-1">RASYON v1.0.0</div>
+                        <div className="text-xs font-bold text-zinc-900 dark:text-white mb-1">RASYON {APP_VERSION}</div>
                         <div className="text-[10px] text-zinc-500">Created by Ata Ayyıldız</div>
                     </div>
                 </div>
@@ -88,38 +90,77 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         </div>
                         <div className="p-6 text-zinc-600 dark:text-zinc-300 text-sm space-y-4 max-h-[60vh] overflow-y-auto">
                             {subModal === 'instructions' ? (
-                                <>
+                                <div className="space-y-4">
                                     <p><strong className="text-zinc-900 dark:text-white">RASYON</strong>, restoran ve kafeler için geliştirilmiş akıllı bir finansal yönetim aracıdır.</p>
-                                    <ul className="list-disc pl-5 space-y-2">
-                                        <li><strong className="text-zinc-900 dark:text-white">Reçeteler:</strong> Ürünlerinizin maliyetini hesaplayın. Akıllı fiyat çarpanı ile ideal satış fiyatınızı belirleyin.</li>
-                                        <li><strong className="text-zinc-900 dark:text-white">Satış Hedefi:</strong> Günlük tahmini satış adetlerini girerek aylık ciro ve hammadde ihtiyacını görün.</li>
-                                        <li><strong className="text-zinc-900 dark:text-white">Bilanço:</strong> Sabit giderlerinizi, personel maaşlarını ve diğer harcamaları girerek gerçek net kârınızı görün.</li>
-                                        <li><strong className="text-zinc-900 dark:text-white">Vergi Analizi:</strong> Şirket tipinize (Şahıs/Limited) göre tahmini gelir vergisi ve KDV hesaplamasını otomatik takip edin.</li>
-                                    </ul>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                                                v1.0.0 <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 px-2 py-0.5 rounded">YENİ</span>
+
+                                    <div className="space-y-6 pt-4">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                                                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold">1</div>
+                                                <h3 className="font-semibold text-zinc-900 dark:text-white">Reçeteler</h3>
                                             </div>
-                                            <ul className="list-disc pl-5 mt-2 space-y-1 text-xs">
-                                                <li>Marka kimliği <strong>RASYON</strong> olarak güncellendi.</li>
-                                                <li>Giriş ekranı (İşletme Yetkilisi) eklendi.</li>
-                                                <li>Fiyat girişleri ve maliyet çarpanı iyileştirildi.</li>
-                                                <li>Vergi sonrası net kâr analizi düzeltildi.</li>
+                                            <p className="text-sm text-zinc-600 dark:text-zinc-400 pl-8">
+                                                Menünüzdeki ürünleri oluşturun ve maliyetlerini hesaplayın.
+                                            </p>
+                                            <ul className="pl-8 space-y-1 text-sm text-zinc-500 dark:text-zinc-500 list-disc list-inside">
+                                                <li>"Yeni Reçete Ekle" butonuna tıklayarak ürün oluşturun.</li>
+                                                <li>Ürün adı, kategorisi ve satış fiyatını girin.</li>
+                                                <li>Malzemeleri ve miktarlarını ekleyerek birim maliyeti görün.</li>
                                             </ul>
                                         </div>
-                                        <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                                            <div className="font-bold text-zinc-500">v0.7</div>
-                                            <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-zinc-500">
-                                                <li>Reçete fiyatlarında çift yönlü düzenleme.</li>
-                                                <li>KDV %1 Gıda düzeltmesi.</li>
+
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                                                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold">2</div>
+                                                <h3 className="font-semibold text-zinc-900 dark:text-white">Satış Hedefleri</h3>
+                                            </div>
+                                            <p className="text-sm text-zinc-600 dark:text-zinc-400 pl-8">
+                                                Kârlılık analizi için günlük hedeflerinizi belirleyin.
+                                            </p>
+                                            <ul className="pl-8 space-y-1 text-sm text-zinc-500 dark:text-zinc-500 list-disc list-inside">
+                                                <li>Her ürün için günlük tahmini satış adedi girin.</li>
+                                                <li>Ambalaj ve paketleme maliyetlerini "Paketleme Giderleri" alanından yönetin.</li>
+                                                <li>Hedefleriniz doğrultusunda aylık tahmini ciro ve kârı görün.</li>
+                                            </ul>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                                                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold">3</div>
+                                                <h3 className="font-semibold text-zinc-900 dark:text-white">Aylık Bilanço</h3>
+                                            </div>
+                                            <p className="text-sm text-zinc-600 dark:text-zinc-400 pl-8">
+                                                Tüm giderlerinizi ve net durumunuzu kontrol edin.
+                                            </p>
+                                            <ul className="pl-8 space-y-1 text-sm text-zinc-500 dark:text-zinc-500 list-disc list-inside">
+                                                <li>Kira, fatura, personel gibi sabit giderlerinizi listeleyin.</li>
+                                                <li>Komisyon gibi ciroya bağlı otomatik giderleri tanımlayın.</li>
+                                                <li>Çalışma gün sayısını belirleyin ve net kârınızı analiz edin.</li>
                                             </ul>
                                         </div>
                                     </div>
-                                </>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                                            {APP_VERSION} <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 px-2 py-0.5 rounded">GÜNCEL</span>
+                                        </div>
+                                        <ul className="list-disc pl-5 mt-2 space-y-1 text-xs">
+                                            <li>Admin Paneli eklendi (Canlı istatistikler, Kullanıcı Takibi).</li>
+                                            <li>Veritabanı bağlantısı hızlandırıldı.</li>
+                                            <li>Kayıt ve Giriş ekranları yenilendi.</li>
+                                            <li>Şifremi unuttum özelliği eklendi.</li>
+                                        </ul>
+                                    </div>
+                                    <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                                        <div className="font-bold text-zinc-500">v1.0.0</div>
+                                        <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-zinc-500">
+                                            <li>Marka kimliği <strong>RASYON</strong> olarak güncellendi.</li>
+                                            <li>Giriş ekranı (İşletme Yetkilisi) eklendi.</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
