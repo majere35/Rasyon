@@ -12,7 +12,8 @@ export const releaseNotes: ReleaseNote[] = [
             'Ambalaj maliyeti sadece paket satışlarına yansıtılacak şekilde güncellendi.',
             'Tablo düzeni sabitlendi, büyük sayılarda kayma sorunu giderildi.',
             'Sayı girişleri (input) için özel tasarım (oklar) eklendi.',
-            'Açılır menülerde taşma sorunu (clipping) düzeltildi.'
+            'Açılır menülerde taşma sorunu (clipping) düzeltildi.',
+            'Sürüm notları altyapısı yenilendi ve otomatikleştirildi.'
         ]
     },
     {
