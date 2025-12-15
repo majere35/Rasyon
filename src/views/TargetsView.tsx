@@ -142,12 +142,12 @@ export function TargetsView() {
                             <thead className="bg-zinc-900/50 text-zinc-400 font-medium border-b border-zinc-800">
                                 <tr>
                                     {/* Optimization: Fixed widths using precise percentages to sum to ~100% */}
-                                    <th className="px-4 py-2 w-[25%]">Ürün Adı</th>
+                                    <th className="px-4 py-2 w-[30%]">Ürün Adı</th>
                                     <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[10%]">Brm. Mal.</th>
                                     <th className="px-1 py-2 text-center whitespace-nowrap text-xs w-[10%]">Rest. Adet</th>
-                                    <th className="px-1 py-2 text-center whitespace-nowrap text-xs w-[10%]">Pkt. Adet</th>
+                                    <th className="px-1 py-2 text-center whitespace-nowrap text-xs w-[8%]">Pkt. Adet</th>
                                     <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[12%]">Topl. Mal.</th>
-                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[12%]">Brm. Fiyat</th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[9%]">Brm. Fiyat</th>
                                     <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[12%]">Ciro</th>
                                     <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[5%]">Mal. %</th>
                                     <th className="px-1 py-2 w-[4%]"></th>

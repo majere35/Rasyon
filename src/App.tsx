@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { RecipesView } from './views/RecipesView';
+import { IngredientsView } from './views/IngredientsView';
 import { TargetsView } from './views/TargetsView';
 import { BalanceView } from './views/BalanceView';
 import { LoginView } from './views/LoginView';
@@ -87,10 +88,11 @@ function App() {
         {(activeTab) => (
           <>
             {activeTab === 'recipes' && <RecipesView />}
+            {activeTab === 'ingredients' && <IngredientsView />}
             {activeTab === 'targets' && <TargetsView />}
             {activeTab === 'balance' && <BalanceView />}
 
-            {(activeTab === 'admin_dashboard' || activeTab === 'admin') && <AdminView />}
+            {activeTab === 'admin_dashboard' && <AdminView />}
             {activeTab === 'admin_users' && <AdminUsersView />}
             {activeTab === 'admin_reports' && <AdminReportsView />}
             {activeTab === 'admin_settings' && <AdminSettingsView />}

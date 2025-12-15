@@ -3,6 +3,7 @@ import { Trash2, TrendingUp, Calendar, Plus, X, Building2, Factory, Truck, Users
 import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
 import { TaxSummary } from '../components/TaxSummary';
+import { NumberInput } from '../components/NumberInput';
 import type { Expense } from '../types';
 
 const EXPENSE_GROUPS = [
@@ -295,11 +296,12 @@ export function BalanceView() {
                     </div>
                     <div>
                         <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Çalışma Günü</div>
-                        <input
-                            type="number"
+                        <NumberInput
                             value={daysWorkedInMonth}
-                            onChange={(e) => setDaysWorked(parseInt(e.target.value) || 0)}
-                            className="bg-transparent text-lg font-bold text-white w-12 focus:outline-none border-b border-zinc-700 focus:border-indigo-500 transition-colors"
+                            onChange={(val) => setDaysWorked(val || 0)}
+                            className="bg-transparent text-lg font-bold text-white w-16 focus:outline-none border-b border-zinc-700 focus:border-indigo-500 transition-colors text-center"
+                            min={0}
+                            max={31}
                         />
                     </div>
                 </div>
@@ -406,7 +408,7 @@ export function BalanceView() {
                                                                 onFocus={(e) => e.target.select()}
                                                             />
                                                         ) : (
-                                                            <div className="flex flex-col">
+                                                            <div className="flex items-center gap-2">
                                                                 <span
                                                                     className={`text-zinc-300 ${!expense.isAutomated ? 'cursor-pointer hover:text-white' : ''} truncate`}
                                                                     onClick={() => !expense.isAutomated && startEditing(expense, 'name')}
@@ -428,21 +430,20 @@ export function BalanceView() {
 
                                                                 {/* RENT TAX SWITCH */}
                                                                 {expense.name.toLowerCase() === 'kira' && (
-                                                                    <div className="flex items-center gap-2 mt-1">
-                                                                        <button
-                                                                            onClick={() => updateExpense(expense.id, { ...expense, taxMethod: 'kdv' })}
-                                                                            className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors ${!expense.taxMethod || expense.taxMethod === 'kdv' ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}`}
+                                                                    <div className="flex items-center gap-2 ml-8">
+                                                                        {/* Toggle Switch */}
+                                                                        <div
+                                                                            onClick={() => updateExpense(expense.id, { ...expense, taxMethod: expense.taxMethod === 'stopaj' ? 'kdv' : 'stopaj' })}
+                                                                            className={`relative inline-flex h-5 w-[76px] items-center rounded-full transition-colors cursor-pointer border border-transparent ${expense.taxMethod === 'stopaj' ? 'bg-orange-500/20 ring-1 ring-orange-500/50' : 'bg-indigo-500/20 ring-1 ring-indigo-500/50'}`}
                                                                         >
-                                                                            +KDV
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => updateExpense(expense.id, { ...expense, taxMethod: 'stopaj' })}
-                                                                            className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors ${expense.taxMethod === 'stopaj' ? 'bg-orange-500/20 border-orange-500/50 text-orange-300' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}`}
-                                                                        >
-                                                                            STOPAJ
-                                                                        </button>
+                                                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${expense.taxMethod === 'stopaj' ? 'translate-x-[58px] bg-orange-400' : 'translate-x-1 bg-indigo-400'}`} />
+                                                                            <span className={`absolute text-[9px] font-bold ${expense.taxMethod === 'stopaj' ? 'left-3 text-zinc-500' : 'right-3 text-zinc-500'}`}>
+                                                                                {expense.taxMethod === 'stopaj' ? 'STOPAJ' : 'KDV'}
+                                                                            </span>
+                                                                        </div>
+
                                                                         {expense.taxMethod === 'stopaj' && (
-                                                                            <span className="text-[10px] text-zinc-600 ml-1">
+                                                                            <span className="text-[10px] text-zinc-600">
                                                                                 (Brüt: {formatCurrency(getCalculatedAmount(expense))})
                                                                             </span>
                                                                         )}
@@ -452,6 +453,7 @@ export function BalanceView() {
                                                         )
                                                     )}
                                                 </div>
+
 
                                                 {/* Amount Column - Navigable */}
                                                 <div className="flex items-center gap-4">

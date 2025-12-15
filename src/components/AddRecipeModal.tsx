@@ -11,12 +11,31 @@ interface AddRecipeModalProps {
 }
 
 export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalProps) {
-    const { addRecipe, updateRecipe } = useStore();
+    const { addRecipe, updateRecipe, rawIngredients } = useStore();
     const [name, setName] = useState('');
     const [ingredients, setIngredients] = useState<Omit<Ingredient, 'id'>[]>([]);
     const [costMultiplier, setCostMultiplier] = useState(2.5);
     const [image, setImage] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Autocomplete state
+    const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const searchRef = useRef<HTMLDivElement>(null);
+
+    // Close suggestions on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setShowSuggestions(false);
+                setActiveSearchIndex(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Local state for price input to prevent cursor jump/formatting issues while typing
     const [localPrice, setLocalPrice] = useState<string | null>(null);
@@ -56,11 +75,39 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
         setIngredients(ingredients.filter((_, i) => i !== index));
     };
 
-    const updateIngredient = (index: number, field: keyof Omit<Ingredient, 'id'>, value: string | number) => {
+    const updateIngredient = (index: number, field: keyof Omit<Ingredient, 'id'> | 'rawIngredientId', value: string | number | null) => {
         const newIngredients = [...ingredients];
         newIngredients[index] = { ...newIngredients[index], [field]: value };
         setIngredients(newIngredients);
     };
+
+    const handleIngredientSearch = (index: number, query: string) => {
+        updateIngredient(index, 'name', query);
+        // Clear link if name changes manually to something else (optional, but good for consistency)
+        // For now we keep the link unless they explicitly select another or we want to unlink on edit.
+        // Let's just track the active search.
+        setSearchQuery(query);
+        setActiveSearchIndex(index);
+        setShowSuggestions(true);
+    };
+
+    const selectRawIngredient = (index: number, rawIngredient: any) => {
+        const newIngredients = [...ingredients];
+        newIngredients[index] = {
+            ...newIngredients[index],
+            name: rawIngredient.name,
+            unit: rawIngredient.unit,
+            price: rawIngredient.price,
+            rawIngredientId: rawIngredient.id
+        };
+        setIngredients(newIngredients);
+        setShowSuggestions(false);
+        setActiveSearchIndex(null);
+    };
+
+    const filteredRawIngredients = searchQuery
+        ? rawIngredients.filter(ri => ri.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : rawIngredients;
 
     const calculateTotalCost = () => {
         return ingredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
@@ -251,14 +298,40 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                     <tbody className="divide-y divide-zinc-800/50">
                                         {ingredients.map((item, index) => (
                                             <tr key={index} className="group hover:bg-zinc-800/30 transition-colors">
-                                                <td className="p-2 pl-4">
+                                                <td className="p-2 pl-4 relative">
                                                     <input
                                                         type="text"
                                                         value={item.name}
-                                                        onChange={(e) => updateIngredient(index, 'name', e.target.value)}
+                                                        onChange={(e) => handleIngredientSearch(index, e.target.value)}
+                                                        onFocus={() => {
+                                                            setActiveSearchIndex(index);
+                                                            setSearchQuery(item.name);
+                                                            setShowSuggestions(true);
+                                                        }}
                                                         placeholder="Malzeme adı..."
-                                                        className="w-full bg-transparent border-none p-0 text-zinc-200 placeholder-zinc-700 focus:ring-0 text-sm"
+                                                        className={`w-full bg-transparent border-none p-0 text-zinc-200 placeholder-zinc-700 focus:ring-0 text-sm ${item.rawIngredientId ? 'text-indigo-400 font-medium' : ''}`}
                                                     />
+                                                    {/* Auto-complete Dropdown */}
+                                                    {showSuggestions && activeSearchIndex === index && (
+                                                        <div ref={searchRef} className="absolute left-0 top-full mt-1 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
+                                                            {filteredRawIngredients.length > 0 ? (
+                                                                filteredRawIngredients.map(ri => (
+                                                                    <div
+                                                                        key={ri.id}
+                                                                        onClick={() => selectRawIngredient(index, ri)}
+                                                                        className="px-3 py-2 hover:bg-zinc-800 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group"
+                                                                    >
+                                                                        <span>{ri.name}</span>
+                                                                        <span className="text-xs text-zinc-500 font-mono group-hover:text-zinc-400">
+                                                                            {ri.price.toFixed(2)}₺/{ri.unit}
+                                                                        </span>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="px-3 py-2 text-xs text-zinc-500">Sonuç bulunamadı</div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="p-2">
                                                     <NumberInput

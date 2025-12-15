@@ -4,6 +4,22 @@ export interface Ingredient {
     quantity: number;
     unit: 'kg' | 'lt' | 'adet' | 'gr' | 'cl';
     price: number;
+    rawIngredientId?: string; // Link to global raw ingredient
+}
+
+export interface IngredientCategory {
+    id: string;
+    name: string;
+    color: string;
+}
+
+export interface RawIngredient {
+    id: string;
+    name: string;
+    categoryId: string;
+    price: number;
+    unit: 'kg' | 'lt' | 'adet' | 'gr' | 'cl';
+    minimumStock?: number;
 }
 
 export interface Recipe {
@@ -62,6 +78,16 @@ export interface AppState {
     expenses: Expense[];
     daysWorkedInMonth: number;
     packagingCosts: Expense[];
+
+    // Ingredients Feature
+    rawIngredients: RawIngredient[];
+    ingredientCategories: IngredientCategory[];
+    addRawIngredient: (ingredient: RawIngredient) => void;
+    updateRawIngredient: (id: string, ingredient: RawIngredient) => void;
+    deleteRawIngredient: (id: string) => void;
+    bulkDeleteRawIngredients: (ids: string[]) => void;
+    addIngredientCategory: (category: IngredientCategory) => void;
+    deleteIngredientCategory: (id: string) => void;
 
     addRecipe: (recipe: Recipe) => void;
     updateRecipe: (id: string, updated: Recipe) => void;

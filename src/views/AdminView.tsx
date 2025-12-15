@@ -11,7 +11,6 @@ export function AdminView() {
         expensesCount: 0
     });
     const [recentUsers, setRecentUsers] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
 
     const handleRefresh = () => {
         // Since we are using subscriptions, this might just be a placebo or could trigger a re-mount if we wanted,
@@ -22,7 +21,6 @@ export function AdminView() {
     useEffect(() => {
         const unsubStats = subscribeToSystemStats((data) => {
             setStats(data);
-            setLoading(false);
         });
 
         const unsubUsers = subscribeToUsers((data) => {

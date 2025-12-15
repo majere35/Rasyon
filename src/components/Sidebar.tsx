@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { ChefHat, Wallet, Target, Settings, LogOut, ShieldCheck } from 'lucide-react';
+import { ChefHat, Wallet, Target, Settings, LogOut, ShieldCheck, LayoutList } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useStore } from '../store/useStore';
 import { SettingsModal } from './SettingsModal';
 import { APP_VERSION } from '../config';
 
+import type { ActiveTab } from '../layouts/DashboardLayout';
+
 interface SidebarProps {
-    activeTab: string;
-    onTabChange: (tab: string) => void;
+    activeTab: ActiveTab;
+    onTabChange: (tab: ActiveTab) => void;
 }
 
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
@@ -16,6 +18,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const menuItems = [
+        { id: 'ingredients', label: 'Hammaddeler', icon: LayoutList },
         { id: 'recipes', label: 'Reçeteler', icon: ChefHat },
         { id: 'targets', label: 'Satış Hedefi', icon: Target },
         { id: 'balance', label: 'Aylık Bilanço', icon: Wallet },

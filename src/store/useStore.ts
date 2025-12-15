@@ -21,6 +21,10 @@ export const useStore = create<AppState>()(
             daysWorkedInMonth: 26,
             packagingCosts: [],
 
+            // Ingredients Feature Defaults
+            rawIngredients: [],
+            ingredientCategories: [],
+
             initializeDefaults: () => set((state) => {
                 if (state.expenses.length > 0) return {}; // Don't overwrite if exists
 
@@ -69,6 +73,19 @@ export const useStore = create<AppState>()(
                     { id: 'def_14', name: 'SGK', amount: 0, category: 'fixed', group: 'personnel', vatRate: 0 },
                     { id: 'def_15', name: 'Yol, Yemek ve Yan Haklar', amount: 0, category: 'fixed', group: 'personnel', vatRate: 0.20 },
                 ];
+
+                // Initialize Categories if empty
+                if (state.ingredientCategories.length === 0) {
+                    const defaultCats: any[] = [
+                        { id: 'cat_fruit_veg', name: 'Meyve & Sebze', color: 'bg-green-500' },
+                        { id: 'cat_meat', name: 'Et & Tavuk', color: 'bg-red-500' },
+                        { id: 'cat_dry', name: 'Kuru Gıda', color: 'bg-yellow-500' },
+                        { id: 'cat_dairy', name: 'Süt & Kahvaltılık', color: 'bg-blue-500' },
+                        { id: 'cat_packaging', name: 'Ambalaj', color: 'bg-zinc-500' },
+                    ];
+                    return { expenses: defaults, ingredientCategories: defaultCats };
+                }
+
                 return { expenses: defaults };
             }),
 
@@ -101,6 +118,60 @@ export const useStore = create<AppState>()(
 
             setDaysWorked: (days: number) => set({ daysWorkedInMonth: days }),
 
+            // --- Ingredients Actions ---
+            addRawIngredient: (ingredient) => set((state) => ({
+                rawIngredients: [...state.rawIngredients, ingredient]
+            })),
+
+            updateRawIngredient: (id, updated) => set((state) => {
+                const newIngredients = state.rawIngredients.map(item =>
+                    item.id === id ? updated : item
+                );
+
+                // Auto-update linked recipes
+                let recipeUpdated = false;
+                const newRecipes = state.recipes.map(recipe => {
+                    const needsUpdate = recipe.ingredients.some(i => i.rawIngredientId === id);
+                    if (!needsUpdate) return recipe;
+
+                    recipeUpdated = true;
+                    const newRecipeIngredients = recipe.ingredients.map(ing => {
+                        if (ing.rawIngredientId === id) {
+                            return { ...ing, price: updated.price, unit: updated.unit };
+                        }
+                        return ing;
+                    });
+
+                    const newTotalCost = newRecipeIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+                    return {
+                        ...recipe,
+                        ingredients: newRecipeIngredients,
+                        totalCost: newTotalCost
+                    };
+                });
+
+                return {
+                    rawIngredients: newIngredients,
+                    recipes: recipeUpdated ? newRecipes : state.recipes
+                };
+            }),
+
+            deleteRawIngredient: (id) => set((state) => ({
+                rawIngredients: state.rawIngredients.filter(item => item.id !== id)
+            })),
+
+            addIngredientCategory: (category) => set((state) => ({
+                ingredientCategories: [...state.ingredientCategories, category]
+            })),
+
+            deleteIngredientCategory: (id) => set((state) => ({
+                ingredientCategories: state.ingredientCategories.filter(item => item.id !== id)
+            })),
+
+            bulkDeleteRawIngredients: (ids: string[]) => set((state) => ({
+                rawIngredients: state.rawIngredients.filter(item => !ids.includes(item.id))
+            })),
+
             // Helper for Packaging Costs
             addPackagingCost: (cost) => set((state) => ({ packagingCosts: [...state.packagingCosts, cost] })),
             updatePackagingCost: (id, cost) => set((state) => {
@@ -125,7 +196,9 @@ export const useStore = create<AppState>()(
                 expenses: state.expenses,
                 company: state.company, // Persist company info
                 daysWorkedInMonth: state.daysWorkedInMonth,
-                packagingCosts: state.packagingCosts
+                packagingCosts: state.packagingCosts,
+                rawIngredients: state.rawIngredients,
+                ingredientCategories: state.ingredientCategories,
             }),
         }
     )

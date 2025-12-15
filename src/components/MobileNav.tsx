@@ -4,9 +4,12 @@ import { twMerge } from 'tailwind-merge';
 import { useState } from 'react';
 import { SettingsModal } from './SettingsModal';
 
+import { LayoutList } from 'lucide-react';
+import type { ActiveTab } from '../layouts/DashboardLayout';
+
 interface MobileNavProps {
-    activeTab: 'recipes' | 'targets' | 'balance';
-    onTabChange: (tab: 'recipes' | 'targets' | 'balance') => void;
+    activeTab: ActiveTab;
+    onTabChange: (tab: ActiveTab) => void;
 }
 
 export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
@@ -14,6 +17,7 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
 
     const navItems = [
         { id: 'recipes', icon: ChefHat, label: 'Reçete' },
+        { id: 'ingredients', icon: LayoutList, label: 'Hammadde' },
         { id: 'targets', icon: Target, label: 'Hedef' },
         { id: 'balance', icon: Wallet, label: 'Bilanço' },
     ] as const;

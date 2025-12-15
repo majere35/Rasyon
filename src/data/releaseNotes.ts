@@ -6,6 +6,17 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: 'v1.1.1',
+        date: '15.12.2025',
+        changes: [
+            'Satış Hedefleri tablosu sütun genişlikleri optimize edildi (Ürün adı genişletildi).',
+            'Kira gideri için KDV/Stopaj seçimi modern toggle switch ile değiştirildi.',
+            'Malzeme silme uyarısı modern modal arayüzüne taşındı.',
+            'Hostinger dağıtımı için altyapı düzenlemeleri yapıldı.',
+            'Genel performans ve arayüz iyileştirmeleri.'
+        ]
+    },
+    {
         version: 'v1.1.0',
         changes: [
             'Vergi: Kurumlar Vergisi hesaplaması "Net Kâr (%25)" üzerinden yapılmak üzere güncellendi.',

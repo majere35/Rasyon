@@ -52,9 +52,9 @@ export function RecipeCard({ recipe, onEdit, onDelete }: RecipeCardProps) {
                 </div>
             </div>
 
-            <div className="p-4 flex flex-col flex-1">
-                <div className="mb-3">
-                    <h3 className="font-bold text-lg text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
+            <div className="p-3 flex flex-col flex-1">
+                <div className="mb-2">
+                    <h3 className="font-bold text-base text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
                         {recipe.name}
                     </h3>
                     <div className="text-xs text-zinc-500">
@@ -63,19 +63,19 @@ export function RecipeCard({ recipe, onEdit, onDelete }: RecipeCardProps) {
                 </div>
 
                 <div className="space-y-2 mt-auto">
-                    <div className="flex justify-between items-center text-sm">
+                    <div className="flex justify-between items-center text-xs">
                         <span className="text-zinc-500">Maliyet</span>
                         <span className="font-mono text-zinc-300">{formatCurrency(recipe.totalCost)}</span>
                     </div>
 
-                    <div className="flex justify-between items-center text-sm border-t border-zinc-700/50 pt-2">
+                    <div className="flex justify-between items-center text-xs border-t border-zinc-700/50 pt-2">
                         <span className="text-zinc-500">Satış</span>
                         <span className="font-mono text-green-400 font-bold">{formatCurrency(recipe.calculatedPrice)}</span>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-zinc-900/40 px-4 py-2 flex justify-between items-center text-xs">
+            <div className="bg-zinc-900/40 px-3 py-1.5 flex justify-between items-center text-[10px] md:text-xs">
                 <span className="bg-zinc-700/30 px-1.5 py-0.5 rounded text-zinc-400">
                     x{formatNumber(recipe.costMultiplier || 0)}
                 </span>

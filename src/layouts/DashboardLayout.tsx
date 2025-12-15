@@ -4,12 +4,14 @@ import { MobileNav } from '../components/MobileNav';
 import { useStore } from '../store/useStore';
 import { ChefHat } from 'lucide-react';
 
+export type ActiveTab = 'recipes' | 'ingredients' | 'targets' | 'balance' | 'admin_dashboard' | 'admin_users' | 'admin_reports' | 'admin_settings';
+
 interface DashboardLayoutProps {
-    children: (activeTab: 'recipes' | 'targets' | 'balance') => React.ReactNode;
+    children: (activeTab: ActiveTab) => React.ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-    const [activeTab, setActiveTab] = useState<'recipes' | 'targets' | 'balance'>('recipes');
+    const [activeTab, setActiveTab] = useState<ActiveTab>('recipes');
     const { toggleConfig } = useStore();
 
     return (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, User, Mail, Calendar, Activity, MoreVertical, Shield } from 'lucide-react';
+import { Search, User, Calendar, Activity, MoreVertical, Shield } from 'lucide-react';
 import { subscribeToUsers, getAllUsers } from '../lib/db';
 
 export function AdminUsersView() {
