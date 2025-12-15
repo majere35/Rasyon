@@ -6,6 +6,14 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: '1.1.6',
+        date: '15.12.2025',
+        changes: [
+            'Bulut senkronizasyonu algoritması iyileştirildi (Mevcut verileri koruma).',
+            'İlk kurulumda veri kaybını önleyen kontroller eklendi.'
+        ]
+    },
+    {
         version: '1.1.5',
         date: '15.12.2025',
         changes: [

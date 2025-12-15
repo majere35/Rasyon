@@ -46,17 +46,28 @@ function App() {
 
     // 1. Load Data on Login
     import('./lib/db').then(async ({ getUserData, updateUserMetadata }) => {
-      // Update metadata (last active, etc)
-      updateUserMetadata(user);
+      const remoteData = await getUserData(user.uid);
+      const localState = useStore.getState();
 
-      const data = await getUserData(user.uid);
-      if (data) {
-        useStore.setState(data);
-      } else {
-        console.log("No remote data found, syncing local data to cloud...");
+      const hasRemoteData = remoteData && (
+        (remoteData.recipes && remoteData.recipes.length > 0) ||
+        (remoteData.expenses && remoteData.expenses.length > 0)
+      );
+
+      // Check if local state has meaningful data (not just defaults, but we assume if they exist they are meaningful for now)
+      const hasLocalData = localState.recipes.length > 0 || localState.expenses.length > 0;
+
+      if (hasRemoteData) {
+        console.log("Remote data found, syncing to local...");
+        useStore.setState(remoteData);
+      } else if (hasLocalData) {
+        console.log("No meaningful remote data, syncing local data to cloud...");
         const { saveUserData } = await import('./lib/db');
-        saveUserData(user.uid, useStore.getState());
+        saveUserData(user.uid, localState);
       }
+
+      // Update metadata after sync decision
+      updateUserMetadata(user);
     });
 
     // 2. Save Data on Change (Debounced/Throttled by nature of user actions usually, but simple subscribe here)
