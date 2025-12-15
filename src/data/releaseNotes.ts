@@ -6,6 +6,14 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: 'v1.1.4',
+        date: '15.12.2025',
+        changes: [
+            'Cihazlar arası veri senkronizasyonu düzeltildi (Masaüstü -> Mobil aktarımı).',
+            'Hammaddelerin buluta kaydedilmemesi sorunu giderildi.'
+        ]
+    },
+    {
         version: 'v1.1.2',
         date: '15.12.2025',
         changes: [

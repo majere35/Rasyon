@@ -53,7 +53,9 @@ function App() {
       if (data) {
         useStore.setState(data);
       } else {
-        console.log("No remote data found, keeping local defaults.");
+        console.log("No remote data found, syncing local data to cloud...");
+        const { saveUserData } = await import('./lib/db');
+        saveUserData(user.uid, useStore.getState());
       }
     });
 

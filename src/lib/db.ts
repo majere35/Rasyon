@@ -2,7 +2,7 @@ import { doc, setDoc, getDoc, collection, onSnapshot, getDocs } from 'firebase/f
 import { db } from './firebase';
 import type { AppState } from '../types';
 
-export const PRESETS = ['recipes', 'salesTargets', 'expenses', 'packagingCosts', 'company', 'daysWorkedInMonth'];
+export const PRESETS = ['recipes', 'salesTargets', 'expenses', 'packagingCosts', 'company', 'daysWorkedInMonth', 'rawIngredients', 'ingredientCategories'];
 
 export async function getUserData(uid: string): Promise<Partial<AppState> | null> {
     const docRef = doc(db, 'users', uid);
