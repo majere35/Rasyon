@@ -94,157 +94,165 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             </button>
                         </div>
 
-                                className="flex flex-col items-center justify-center p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                            >
-                                {isSyncing && syncMsg.includes('Yüklendi') ? <CloudUpload size={20} className="mb-2 text-indigo-500" /> : <CloudUpload size={20} className="mb-2 text-zinc-600 dark:text-zinc-400" />}
-                                <span className="font-medium text-xs text-zinc-900 dark:text-white">Buluta Yükle</span>
-                                <span className="text-[10px] text-zinc-500 text-center leading-tight mt-1">Bu cihazdaki verileri buluta gönder</span>
-                            </button>
+                        {/* Cloud Sync Controls */}
+                        <div className="space-y-2">
+                            <div className="text-xs font-semibold text-zinc-500 ml-1">Veri Senkronizasyonu</div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={handleCloudUpload}
+                                    disabled={isSyncing}
+                                    className="flex flex-col items-center justify-center p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                                >
+                                    {isSyncing && syncMsg.includes('Yüklendi') ? <CloudUpload size={20} className="mb-2 text-indigo-500" /> : <CloudUpload size={20} className="mb-2 text-zinc-600 dark:text-zinc-400" />}
+                                    <span className="font-medium text-xs text-zinc-900 dark:text-white">Buluta Yükle</span>
+                                    <span className="text-[10px] text-zinc-500 text-center leading-tight mt-1">Bu cihazdaki verileri buluta gönder</span>
+                                </button>
 
-                            <button
-                                onClick={handleCloudDownload}
-                                disabled={isSyncing}
-                                className="flex flex-col items-center justify-center p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                            >
-                                {isSyncing && syncMsg.includes('İndir') ? <CloudDownload size={20} className="mb-2 text-green-500" /> : <CloudDownload size={20} className="mb-2 text-zinc-600 dark:text-zinc-400" />}
-                                <span className="font-medium text-xs text-zinc-900 dark:text-white">Buluttan İndir</span>
-                                <span className="text-[10px] text-zinc-500 text-center leading-tight mt-1">Buluttaki verileri bu cihaza çek</span>
-                            </button>
-                        </div>
-                        {syncMsg && (
-                            <div className="text-center text-xs font-bold text-indigo-500 animate-pulse">
-                                {syncMsg}
+                                <button
+                                    onClick={handleCloudDownload}
+                                    disabled={isSyncing}
+                                    className="flex flex-col items-center justify-center p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                                >
+                                    {isSyncing && syncMsg.includes('İndir') ? <CloudDownload size={20} className="mb-2 text-green-500" /> : <CloudDownload size={20} className="mb-2 text-zinc-600 dark:text-zinc-400" />}
+                                    <span className="font-medium text-xs text-zinc-900 dark:text-white">Buluttan İndir</span>
+                                    <span className="text-[10px] text-zinc-500 text-center leading-tight mt-1">Buluttaki verileri bu cihaza çek</span>
+                                </button>
                             </div>
-                        )}
-                    </div>
-
-                    {/* Instructions */}
-                    <button
-                        onClick={() => setSubModal('instructions')}
-                        className="w-full flex items-center gap-3 p-4 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-left"
-                    >
-                        <Book size={20} className="text-green-500 dark:text-green-400" />
-                        <div>
-                            <div className="font-medium text-zinc-900 dark:text-white">Kullanım Talimatları</div>
-                            <div className="text-xs text-zinc-500">Uygulama rehberi ve ipuçları</div>
+                            {syncMsg && (
+                                <div className="text-center text-xs font-bold text-indigo-500 animate-pulse">
+                                    {syncMsg}
+                                </div>
+                            )}
                         </div>
-                    </button>
 
-                    {/* Release Notes */}
-                    <button
-                        onClick={() => setSubModal('release')}
-                        className="w-full flex items-center gap-3 p-4 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-left"
-                    >
-                        <ScrollText size={20} className="text-blue-500 dark:text-blue-400" />
-                        <div>
-                            <div className="font-medium text-zinc-900 dark:text-white">Sürüm Notları</div>
-                            <div className="text-xs text-zinc-500">{APP_VERSION} changes</div>
-                        </div>
-                    </button>
-                </div>
+                        {/* Instructions */}
+                        <button
+                            onClick={() => setSubModal('instructions')}
+                            className="w-full flex items-center gap-3 p-4 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-left"
+                        >
+                            <Book size={20} className="text-green-500 dark:text-green-400" />
+                            <div>
+                                <div className="font-medium text-zinc-900 dark:text-white">Kullanım Talimatları</div>
+                                <div className="text-xs text-zinc-500">Uygulama rehberi ve ipuçları</div>
+                            </div>
+                        </button>
 
-                <div className="mt-8 text-center border-t border-zinc-200 dark:border-zinc-800 pt-4">
-                    <div className="text-xs font-bold text-zinc-900 dark:text-white mb-1">RASYON {APP_VERSION}</div>
-                    <div className="text-[10px] text-zinc-500">Created by Ata Ayyıldız</div>
-                </div>
-            </div >
-        </div >
-
-        {/* Sub Modals - Independent and Centered */ }
-    {
-        subModal && (
-            <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 w-full max-w-sm rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 transition-colors">
-                    <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-900/50">
-                        <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-                            {subModal === 'instructions' ? 'Kullanım Talimatları' : 'Sürüm Notları'}
-                        </h2>
-                        <button onClick={() => setSubModal(null)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-white">
-                            <X size={20} />
+                        {/* Release Notes */}
+                        <button
+                            onClick={() => setSubModal('release')}
+                            className="w-full flex items-center gap-3 p-4 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-left"
+                        >
+                            <ScrollText size={20} className="text-blue-500 dark:text-blue-400" />
+                            <div>
+                                <div className="font-medium text-zinc-900 dark:text-white">Sürüm Notları</div>
+                                <div className="text-xs text-zinc-500">{APP_VERSION} changes</div>
+                            </div>
                         </button>
                     </div>
-                    <div className="p-6 text-zinc-600 dark:text-zinc-300 text-sm space-y-4 max-h-[60vh] overflow-y-auto">
-                        {subModal === 'instructions' ? (
-                            <div className="space-y-4">
-                                <p><strong className="text-zinc-900 dark:text-white">RASYON</strong>, restoran ve kafeler için geliştirilmiş akıllı bir finansal yönetim aracıdır.</p>
 
-                                <div className="space-y-6 pt-4">
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold">1</div>
-                                            <h3 className="font-semibold text-zinc-900 dark:text-white">Reçeteler</h3>
-                                        </div>
-                                        <p className="text-sm text-zinc-600 dark:text-zinc-400 pl-8">
-                                            Menünüzdeki ürünleri oluşturun ve maliyetlerini hesaplayın.
-                                        </p>
-                                        <ul className="pl-8 space-y-1 text-sm text-zinc-500 dark:text-zinc-500 list-disc list-inside">
-                                            <li>"Yeni Reçete Ekle" butonuna tıklayarak ürün oluşturun.</li>
-                                            <li>Ürün adı, kategorisi ve satış fiyatını girin.</li>
-                                            <li>Malzemeleri ve miktarlarını ekleyerek birim maliyeti görün.</li>
-                                        </ul>
-                                    </div>
+                    <div className="mt-8 text-center border-t border-zinc-200 dark:border-zinc-800 pt-4">
+                        <div className="text-xs font-bold text-zinc-900 dark:text-white mb-1">RASYON {APP_VERSION}</div>
+                        <div className="text-[10px] text-zinc-500">Created by Ata Ayyıldız</div>
+                    </div>
+                </div >
 
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold">2</div>
-                                            <h3 className="font-semibold text-zinc-900 dark:text-white">Satış Hedefleri</h3>
-                                        </div>
-                                        <p className="text-sm text-zinc-600 dark:text-zinc-400 pl-8">
-                                            Kârlılık analizi için günlük hedeflerinizi belirleyin.
-                                        </p>
-                                        <ul className="pl-8 space-y-1 text-sm text-zinc-500 dark:text-zinc-500 list-disc list-inside">
-                                            <li>Her ürün için günlük tahmini satış adedi girin.</li>
-                                            <li>Ambalaj ve paketleme maliyetlerini "Paketleme Giderleri" alanından yönetin.</li>
-                                            <li>Hedefleriniz doğrultusunda aylık tahmini ciro ve kârı görün.</li>
-                                        </ul>
-                                    </div>
 
-                                    <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold">3</div>
-                                            <h3 className="font-semibold text-zinc-900 dark:text-white">Aylık Bilanço</h3>
-                                        </div>
-                                        <p className="text-sm text-zinc-600 dark:text-zinc-400 pl-8">
-                                            Tüm giderlerinizi ve net durumunuzu kontrol edin.
-                                        </p>
-                                        <ul className="pl-8 space-y-1 text-sm text-zinc-500 dark:text-zinc-500 list-disc list-inside">
-                                            <li>Kira, fatura, personel gibi sabit giderlerinizi listeleyin.</li>
-                                            <li>Komisyon gibi ciroya bağlı otomatik giderleri tanımlayın.</li>
-                                            <li>Çalışma gün sayısını belirleyin ve net kârınızı analiz edin.</li>
-                                        </ul>
-                                    </div>
+
+                {/* Sub Modals - Independent and Centered */}
+                {
+                    subModal && (
+                        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                            <div className="bg-white dark:bg-[#18181b] border border-zinc-200 dark:border-zinc-800 w-full max-w-sm rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200 transition-colors">
+                                <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center bg-zinc-50 dark:bg-zinc-900/50">
+                                    <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+                                        {subModal === 'instructions' ? 'Kullanım Talimatları' : 'Sürüm Notları'}
+                                    </h2>
+                                    <button onClick={() => setSubModal(null)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-white">
+                                        <X size={20} />
+                                    </button>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {
-                                    releaseNotes.slice(0, 10).map((release, index) => (
-                                        <div key={release.version} className={`space-y-4 ${index !== 0 ? 'pt-4 border-t border-zinc-200 dark:border-zinc-800' : ''} ${index > 0 ? 'opacity-70 hover:opacity-100 transition-opacity' : ''}`}>
-                                            <div>
-                                                <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                                                    {release.version}
-                                                    {index === 0 && (
-                                                        <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 px-2 py-0.5 rounded">
-                                                            GÜNCEL
-                                                        </span>
-                                                    )}
+                                <div className="p-6 text-zinc-600 dark:text-zinc-300 text-sm space-y-4 max-h-[60vh] overflow-y-auto">
+                                    {subModal === 'instructions' ? (
+                                        <div className="space-y-4">
+                                            <p><strong className="text-zinc-900 dark:text-white">RASYON</strong>, restoran ve kafeler için geliştirilmiş akıllı bir finansal yönetim aracıdır.</p>
+
+                                            <div className="space-y-6 pt-4">
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold">1</div>
+                                                        <h3 className="font-semibold text-zinc-900 dark:text-white">Reçeteler</h3>
+                                                    </div>
+                                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 pl-8">
+                                                        Menünüzdeki ürünleri oluşturun ve maliyetlerini hesaplayın.
+                                                    </p>
+                                                    <ul className="pl-8 space-y-1 text-sm text-zinc-500 dark:text-zinc-500 list-disc list-inside">
+                                                        <li>"Yeni Reçete Ekle" butonuna tıklayarak ürün oluşturun.</li>
+                                                        <li>Ürün adı, kategorisi ve satış fiyatını girin.</li>
+                                                        <li>Malzemeleri ve miktarlarını ekleyerek birim maliyeti görün.</li>
+                                                    </ul>
                                                 </div>
-                                                <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
-                                                    {release.changes.map((change, i) => (
-                                                        <li key={i}>{change}</li>
-                                                    ))}
-                                                </ul>
+
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold">2</div>
+                                                        <h3 className="font-semibold text-zinc-900 dark:text-white">Satış Hedefleri</h3>
+                                                    </div>
+                                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 pl-8">
+                                                        Kârlılık analizi için günlük hedeflerinizi belirleyin.
+                                                    </p>
+                                                    <ul className="pl-8 space-y-1 text-sm text-zinc-500 dark:text-zinc-500 list-disc list-inside">
+                                                        <li>Her ürün için günlük tahmini satış adedi girin.</li>
+                                                        <li>Ambalaj ve paketleme maliyetlerini "Paketleme Giderleri" alanından yönetin.</li>
+                                                        <li>Hedefleriniz doğrultusunda aylık tahmini ciro ve kârı görün.</li>
+                                                    </ul>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-bold">3</div>
+                                                        <h3 className="font-semibold text-zinc-900 dark:text-white">Aylık Bilanço</h3>
+                                                    </div>
+                                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 pl-8">
+                                                        Tüm giderlerinizi ve net durumunuzu kontrol edin.
+                                                    </p>
+                                                    <ul className="pl-8 space-y-1 text-sm text-zinc-500 dark:text-zinc-500 list-disc list-inside">
+                                                        <li>Kira, fatura, personel gibi sabit giderlerinizi listeleyin.</li>
+                                                        <li>Komisyon gibi ciroya bağlı otomatik giderleri tanımlayın.</li>
+                                                        <li>Çalışma gün sayısını belirleyin ve net kârınızı analiz edin.</li>
+                                                    </ul>
+                                                </div>
                                             </div>
                                         </div>
-                                    ))
-                                }
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {
+                                                releaseNotes.slice(0, 10).map((release, index) => (
+                                                    <div key={release.version} className={`space-y-4 ${index !== 0 ? 'pt-4 border-t border-zinc-200 dark:border-zinc-800' : ''} ${index > 0 ? 'opacity-70 hover:opacity-100 transition-opacity' : ''}`}>
+                                                        <div>
+                                                            <div className="font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                                                                {release.version}
+                                                                {index === 0 && (
+                                                                    <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-300 px-2 py-0.5 rounded">
+                                                                        GÜNCEL
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <ul className="list-disc pl-5 mt-2 space-y-1 text-xs text-zinc-600 dark:text-zinc-400">
+                                                                {release.changes.map((change, i) => (
+                                                                    <li key={i}>{change}</li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            }
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        )
-    }
-        </div >
-    );
+                        </div>
+                    )
+                }
+            </div >
+            );
 }
