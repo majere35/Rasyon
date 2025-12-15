@@ -66,22 +66,32 @@ export function BalanceView() {
     // --- Core Calculations ---
     const totalDailyRevenue = salesTargets.reduce((sum, target) => {
         const recipe = recipes.find(r => r.id === target.recipeId);
-        return sum + (recipe ? recipe.calculatedPrice * target.dailyTarget : 0);
+        if (!recipe) return sum;
+        const totalQty = (target.dailyTarget || 0) + (target.packageDailyTarget || 0);
+        return sum + (recipe.calculatedPrice * totalQty);
     }, 0);
     const monthlyRevenue = totalDailyRevenue * daysWorkedInMonth;
 
-    const totalDailyItems = salesTargets.reduce((sum, target) => sum + target.dailyTarget, 0);
+    const totalDailyItems = salesTargets.reduce((sum, target) => {
+        return sum + (target.dailyTarget || 0) + (target.packageDailyTarget || 0);
+    }, 0);
     const monthlyItems = totalDailyItems * daysWorkedInMonth;
 
     const totalDailyIngredientsCost = salesTargets.reduce((sum, target) => {
         const recipe = recipes.find(r => r.id === target.recipeId);
-        return sum + (recipe ? recipe.totalCost * target.dailyTarget : 0);
+        if (!recipe) return sum;
+        const totalQty = (target.dailyTarget || 0) + (target.packageDailyTarget || 0);
+        return sum + (recipe.totalCost * totalQty);
     }, 0);
     const monthlyIngredientsCost = totalDailyIngredientsCost * daysWorkedInMonth;
 
     const { packagingCosts } = useStore();
     const packagingUnitCost = packagingCosts.reduce((sum, p) => sum + p.amount, 0);
-    const monthlyPackagingCost = monthlyItems * packagingUnitCost;
+
+    // Fix: Only apply packaging cost to PACKAGE items
+    const totalDailyPackageItems = salesTargets.reduce((sum, target) => sum + (target.packageDailyTarget || 0), 0);
+    const monthlyPackageItems = totalDailyPackageItems * daysWorkedInMonth;
+    const monthlyPackagingCost = monthlyPackageItems * packagingUnitCost;
 
 
     // --- Helper: Get Calculated Amount for Expense ---
@@ -492,6 +502,23 @@ export function BalanceView() {
                             <div className="flex justify-between items-baseline mb-4">
                                 <span className="text-zinc-400">Tahmini Aylık Ciro</span>
                                 <span className="text-green-400 font-bold font-mono text-2xl">{formatCurrency(monthlyRevenue)}</span>
+                            </div>
+
+                            {/* Expense Breakdown */}
+                            <div className="space-y-1 py-2 border-t border-zinc-800/30">
+                                {EXPENSE_GROUPS.map(group => {
+                                    const groupExpenses = allExpensesWithCalc.filter(e => e.group === group.id);
+                                    const groupTotal = groupExpenses.reduce((sum, e) => sum + e.finalAmount, 0);
+                                    return (
+                                        <div key={group.id} className="flex justify-between text-sm">
+                                            <div className="flex items-center gap-1.5 text-zinc-500">
+                                                <group.icon size={12} className={group.color} />
+                                                <span>{group.title}</span>
+                                            </div>
+                                            <span className="text-zinc-300 font-mono">-{formatCurrency(groupTotal)}</span>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             <div className="space-y-1 text-sm border-t border-zinc-800/50 pt-3">

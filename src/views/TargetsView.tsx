@@ -23,14 +23,28 @@ export function TargetsView() {
 
     const totalDailyRevenue = salesTargets.reduce((sum, target) => {
         const recipe = recipes.find(r => r.id === target.recipeId);
-        const qty = (target.dailyTarget || 0) + (target.packageDailyTarget || 0);
-        return sum + (recipe ? recipe.calculatedPrice * qty : 0);
+        if (!recipe) return sum;
+
+        const restQty = target.dailyTarget || 0;
+        const pkgQty = target.packageDailyTarget || 0;
+
+        const restRevenue = recipe.calculatedPrice * restQty;
+        const pkgRevenue = recipe.calculatedPrice * pkgQty;
+
+        return sum + restRevenue + pkgRevenue;
     }, 0);
 
     const totalDailyCost = salesTargets.reduce((sum, target) => {
         const recipe = recipes.find(r => r.id === target.recipeId);
-        const qty = (target.dailyTarget || 0) + (target.packageDailyTarget || 0);
-        return sum + (recipe ? recipe.totalCost * qty : 0);
+        if (!recipe) return sum;
+
+        const restQty = target.dailyTarget || 0;
+        const pkgQty = target.packageDailyTarget || 0;
+
+        const restCost = recipe.totalCost * restQty;
+        const pkgCost = recipe.totalCost * pkgQty;
+
+        return sum + restCost + pkgCost;
     }, 0);
 
     // Packaging Cost Per Order (sum of unit costs of all packaging items)

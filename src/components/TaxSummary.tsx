@@ -41,13 +41,13 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
     const vatDiff = incomeVat - expensesVat;
 
     return (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 space-y-8">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-5">
             {/* Income Tax Section */}
             <div>
-                <h3 className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">
+                <h3 className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-2 border-b border-zinc-800 pb-1">
                     {company?.type === 'limited' ? 'KURUMLAR VERGİSİ (%25 Ciro)' : 'GELİR VERGİSİ HESAPLAMA'}
                 </h3>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                         <span className="text-zinc-500">Aylık Kâr</span>
                         <span className="text-white font-mono">{monthlyProfit.toFixed(2)} ₺</span>
@@ -56,7 +56,7 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
                         <span className="text-zinc-500">Yıllık Tahmini Kâr</span>
                         <span className="text-white font-mono">{annualProfit.toFixed(2)} ₺</span>
                     </div>
-                    <div className="w-full h-px bg-zinc-800/50 my-2"></div>
+                    <div className="w-full h-px bg-zinc-800/50 my-1"></div>
                     <div className="flex justify-between text-yellow-500">
                         <span>Yıllık Vergi</span>
                         <span className="font-mono">{annualTax.toFixed(2)} ₺</span>
@@ -70,10 +70,10 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
 
             {/* VAT Section */}
             <div>
-                <h3 className="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-4 border-b border-zinc-800 pb-2">
+                <h3 className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-2 border-b border-zinc-800 pb-1">
                     KDV HESAPLAMA (AYLIK)
                 </h3>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                         <span className="text-zinc-500">Hesaplanan KDV (Gelir %10)</span>
                         <span className="text-white font-mono">{incomeVat.toFixed(2)} ₺</span>
@@ -82,7 +82,7 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
                         <span className="text-zinc-500">İndirilecek KDV (Giderler)</span>
                         <span className="text-green-400 font-mono">-{expensesVat.toFixed(2)} ₺</span>
                     </div>
-                    <div className="w-full h-px bg-zinc-800/50 my-2"></div>
+                    <div className="w-full h-px bg-zinc-800/50 my-1"></div>
                     <div className="flex justify-between items-end">
                         <span className="text-zinc-300 font-medium">Ödenecek KDV Farkı</span>
                         <div className={`font-mono font-bold ${vatDiff > 0 ? 'text-red-400' : 'text-green-400'}`}>

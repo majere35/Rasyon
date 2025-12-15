@@ -6,6 +6,16 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: 'v1.0.9',
+        changes: [
+            'Aylık Bilanço: Paket servis cirosu ve maliyetleri hesaplamaya dahil edildi.',
+            'Aylık Bilanço: Finansal Özet kartına detaylı gider kırılımı eklendi.',
+            'Düzeltme: Ambalaj maliyetinin restoran satışlarına yansıması engellendi.',
+            'Arayüz: Vergi ve Özet tabloları daha kompakt hale getirildi.',
+            'Düzeltme: Ürün seçim menüsünde (Dropdown) kaydırma sorunu giderildi.'
+        ]
+    },
+    {
         version: 'v1.0.8',
         changes: [
             'Satış Hedefleri: "Günlük Adet" → "Restoran" ve "Paket" olarak ayrıldı.',

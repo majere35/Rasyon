@@ -21,6 +21,7 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Seçiniz
     const [searchQuery, setSearchQuery] = useState('');
     const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
+    const portalRef = useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find(opt => opt.value === value);
 
@@ -30,29 +31,32 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Seçiniz
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                // Dropdown menu is in a portal, so we need to check if the click was inside the menu too
-                // But typically the portal is outside the container.
-                // However, since we close on click outside, we also need to check if the click was on the portal content.
-                // A simpler way with portals is usually to handle clicks on the window/document and check if target is inside container OR inside the portal element.
-                // For now, let's keep it simple: if we click outside the trigger button, close it.
-                // We will add a check for the portal element strictly if needed, but usually closing on outside click works fine if we stop propagation inside the dropdown.
+            if (
+                containerRef.current &&
+                !containerRef.current.contains(event.target as Node) &&
+                portalRef.current &&
+                !portalRef.current.contains(event.target as Node)
+            ) {
                 setIsOpen(false);
             }
         };
 
-        const handleScroll = () => {
-            if (isOpen) setIsOpen(false); // Close on scroll to avoid position issues for now
+        const handleScroll = (event: Event) => {
+            // Ignore scroll events from inside the dropdown
+            if (portalRef.current && (event.target === portalRef.current || portalRef.current.contains(event.target as Node))) {
+                return;
+            }
+            if (isOpen) setIsOpen(false);
         }
 
         if (isOpen) {
-            window.addEventListener('click', handleClickOutside);
+            window.addEventListener('mousedown', handleClickOutside);
             window.addEventListener('scroll', handleScroll, { capture: true });
             window.addEventListener('resize', handleScroll);
         }
 
         return () => {
-            window.removeEventListener('click', handleClickOutside);
+            window.removeEventListener('mousedown', handleClickOutside);
             window.removeEventListener('scroll', handleScroll, { capture: true });
             window.removeEventListener('resize', handleScroll);
         };
@@ -83,6 +87,7 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Seçiniz
 
         return createPortal(
             <div
+                ref={portalRef}
                 className="fixed z-[9999] bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100"
                 style={{
                     top: position.top - window.scrollY, // Fixed position needs screen relative coords
