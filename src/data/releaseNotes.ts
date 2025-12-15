@@ -6,6 +6,14 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: '1.1.10',
+        date: '15.12.2025',
+        changes: [
+            'Ayarlar menüsü ve butonlar tamamen düzeltildi.',
+            'Arayüz bileşenleri tekrar kontrol edildi.'
+        ]
+    },
+    {
         version: '1.1.9',
         date: '15.12.2025',
         changes: [
