@@ -6,6 +6,14 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: 'v1.1.2',
+        date: '15.12.2025',
+        changes: [
+            'Vercel dağıtımı için yol ayarı (path) düzeltildi.',
+            'Dağıtım ortamı iyileştirmeleri.'
+        ]
+    },
+    {
         version: 'v1.1.1',
         date: '15.12.2025',
         changes: [
