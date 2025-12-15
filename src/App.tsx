@@ -51,7 +51,8 @@ function App() {
 
       const hasRemoteData = remoteData && (
         (remoteData.recipes && remoteData.recipes.length > 0) ||
-        (remoteData.expenses && remoteData.expenses.length > 0)
+        (remoteData.expenses && remoteData.expenses.length > 0) ||
+        (remoteData.company)
       );
 
       // Check if local state has meaningful data (not just defaults, but we assume if they exist they are meaningful for now)
