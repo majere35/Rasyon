@@ -1,4 +1,5 @@
 import { useStore } from '../store/useStore';
+import { formatCurrency } from '../lib/utils';
 
 export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, revenue: number, expensesVat: number }) {
     const { company } = useStore();
@@ -6,10 +7,8 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
     // 2025 Turkish Tax Brackets for Sole Proprietorship (Şahıs)
     const calculateIncomeTax = (annualProfit: number) => {
         if (!company || company.type === 'limited') {
-            // Corporate Tax (Kurumlar Vergisi)
-            // User request: %25 on Revenue? (Confirmed in prompt: "Limited şirket seçildiyse kurumlar vergisi standart %25 olarak hesaplanacak ciro üzerinden.")
-            // This is unusual (normally profit) but I MUST follow the prompt.
-            return revenue * 12 * 0.25;
+            // Corporate Tax (Kurumlar Vergisi) - 25% on Profit
+            return Math.max(0, annualProfit) * 0.25;
         }
 
         // Progressive Tax for Şahıs
@@ -45,25 +44,25 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
             {/* Income Tax Section */}
             <div>
                 <h3 className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-2 border-b border-zinc-800 pb-1">
-                    {company?.type === 'limited' ? 'KURUMLAR VERGİSİ (%25 Ciro)' : 'GELİR VERGİSİ HESAPLAMA'}
+                    {company?.type === 'limited' ? 'KURUMLAR VERGİSİ (%25)' : 'GELİR VERGİSİ HESAPLAMA'}
                 </h3>
                 <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                         <span className="text-zinc-500">Aylık Kâr</span>
-                        <span className="text-white font-mono">{monthlyProfit.toFixed(2)} ₺</span>
+                        <span className="text-white font-mono">{formatCurrency(monthlyProfit)}</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-zinc-500">Yıllık Tahmini Kâr</span>
-                        <span className="text-white font-mono">{annualProfit.toFixed(2)} ₺</span>
+                        <span className="text-white font-mono">{formatCurrency(annualProfit)}</span>
                     </div>
                     <div className="w-full h-px bg-zinc-800/50 my-1"></div>
                     <div className="flex justify-between text-yellow-500">
                         <span>Yıllık Vergi</span>
-                        <span className="font-mono">{annualTax.toFixed(2)} ₺</span>
+                        <span className="font-mono">{formatCurrency(annualTax)}</span>
                     </div>
                     <div className="flex justify-between text-red-400 font-bold">
                         <span>Aylık Ort. Vergi</span>
-                        <span className="font-mono">-{monthlyTax.toFixed(2)} ₺</span>
+                        <span className="font-mono">-{formatCurrency(monthlyTax)}</span>
                     </div>
                 </div>
             </div>
@@ -76,17 +75,17 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
                 <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
                         <span className="text-zinc-500">Hesaplanan KDV (Gelir %10)</span>
-                        <span className="text-white font-mono">{incomeVat.toFixed(2)} ₺</span>
+                        <span className="text-white font-mono">{formatCurrency(incomeVat)}</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-zinc-500">İndirilecek KDV (Giderler)</span>
-                        <span className="text-green-400 font-mono">-{expensesVat.toFixed(2)} ₺</span>
+                        <span className="text-green-400 font-mono">-{formatCurrency(expensesVat)}</span>
                     </div>
                     <div className="w-full h-px bg-zinc-800/50 my-1"></div>
                     <div className="flex justify-between items-end">
                         <span className="text-zinc-300 font-medium">Ödenecek KDV Farkı</span>
                         <div className={`font-mono font-bold ${vatDiff > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                            {vatDiff > 0 ? '-' : '+'}{Math.abs(vatDiff).toFixed(2)} ₺
+                            {vatDiff > 0 ? '-' : '+'}{formatCurrency(Math.abs(vatDiff))}
                         </div>
                     </div>
                 </div>

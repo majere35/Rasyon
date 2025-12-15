@@ -128,7 +128,7 @@ export function TargetsView() {
                     {/* Sales Targets Table */}
                     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
                         {/* Header with Add Button at top right of table area as requested */}
-                        <div className="flex justify-between items-center px-6 py-4 bg-zinc-900/80 border-b border-zinc-800">
+                        <div className="flex justify-between items-center px-6 py-3 bg-zinc-900/80 border-b border-zinc-800">
                             <h3 className="font-bold text-zinc-300">Hedef Tablosu</h3>
                             <button
                                 onClick={handleAddTarget}
@@ -142,15 +142,15 @@ export function TargetsView() {
                             <thead className="bg-zinc-900/50 text-zinc-400 font-medium border-b border-zinc-800">
                                 <tr>
                                     {/* Optimization: Fixed widths using precise percentages to sum to ~100% */}
-                                    <th className="px-4 py-3 w-[25%]">Ürün Adı</th>
-                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[10%]">Brm. Mal.</th>
-                                    <th className="px-1 py-3 text-center whitespace-nowrap text-xs w-[10%]">Rest. Adet</th>
-                                    <th className="px-1 py-3 text-center whitespace-nowrap text-xs w-[10%]">Pkt. Adet</th>
-                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[12%]">Topl. Mal.</th>
-                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[12%]">Brm. Fiyat</th>
-                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[12%]">Ciro</th>
-                                    <th className="px-1 py-3 text-right whitespace-nowrap text-xs w-[5%]">Mal. %</th>
-                                    <th className="px-1 py-3 w-[4%]"></th>
+                                    <th className="px-4 py-2 w-[25%]">Ürün Adı</th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[10%]">Brm. Mal.</th>
+                                    <th className="px-1 py-2 text-center whitespace-nowrap text-xs w-[10%]">Rest. Adet</th>
+                                    <th className="px-1 py-2 text-center whitespace-nowrap text-xs w-[10%]">Pkt. Adet</th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[12%]">Topl. Mal.</th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[12%]">Brm. Fiyat</th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[12%]">Ciro</th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[5%]">Mal. %</th>
+                                    <th className="px-1 py-2 w-[4%]"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-800">
@@ -162,13 +162,6 @@ export function TargetsView() {
                                     const packageQty = target.packageDailyTarget || 0;
                                     const totalQty = restaurantQty + packageQty;
 
-                                    // Cost Calculation:
-                                    // Base Cost = (Rest Qty + Pkg Qty) * Recipe Unit Cost
-                                    // Pkg Cost for this line (implicit) = Pkg Qty * Global Pkg Cost (handled in summary mostly, but for line total we might want to be careful)
-                                    // The user request: "birim başı ambalaj maliyeti sadece 'paket adet'ile ilişkili olacak."
-                                    // Usually "Topl. Maliyet" here refers to Ingredient Cost. 
-                                    // The summary handles the Packaging Cost separately.
-                                    // So here: Total Cost = totalQty * recipe.totalCost.
 
                                     const totalCost = recipe.totalCost * totalQty;
                                     const totalRevenue = recipe.calculatedPrice * totalQty;
@@ -179,7 +172,7 @@ export function TargetsView() {
 
                                     return (
                                         <tr key={target.id} className="group hover:bg-zinc-800/30 transition-colors">
-                                            <td className="px-4 py-3">
+                                            <td className="px-4 py-1">
                                                 <CustomSelect
                                                     value={target.recipeId}
                                                     onChange={(val) => updateSalesTarget(target.id, { ...target, recipeId: val })}
@@ -188,10 +181,10 @@ export function TargetsView() {
                                                 />
                                             </td>
                                             {/* Order: Unit Cost -> Qty -> Total Cost -> Unit Price -> Total Revenue -> Cost % */}
-                                            <td className="px-1 py-3 text-right text-zinc-400 font-mono text-xs">
+                                            <td className="px-1 py-1 text-right text-zinc-400 font-mono text-xs">
                                                 {formatCurrency(recipe.totalCost)}
                                             </td>
-                                            <td className="px-1 py-3 text-center">
+                                            <td className="px-1 py-1 text-center">
                                                 <NumberInput
                                                     min={0}
                                                     value={target.dailyTarget} // Maps to Restaurant Quantity now
@@ -200,7 +193,7 @@ export function TargetsView() {
                                                     placeholder="R"
                                                 />
                                             </td>
-                                            <td className="px-1 py-3 text-center">
+                                            <td className="px-1 py-1 text-center">
                                                 <NumberInput
                                                     min={0}
                                                     value={target.packageDailyTarget || 0}
@@ -209,10 +202,10 @@ export function TargetsView() {
                                                     placeholder="P"
                                                 />
                                             </td>
-                                            <td className="px-1 py-3 text-right text-red-300 font-mono text-xs truncate">
+                                            <td className="px-1 py-1 text-right text-red-300 font-mono text-xs truncate">
                                                 {formatCurrency(totalCost)}
                                             </td>
-                                            <td className="px-1 py-3 text-right text-zinc-200 font-mono">
+                                            <td className="px-1 py-1 text-right text-zinc-200 font-mono">
                                                 <NumberInput
                                                     min={0}
                                                     step={0.01}
@@ -231,13 +224,13 @@ export function TargetsView() {
                                                     className="w-full"
                                                 />
                                             </td>
-                                            <td className="px-1 py-3 text-right font-mono text-green-400 font-medium text-xs truncate">
+                                            <td className="px-1 py-1 text-right font-mono text-green-400 font-medium text-xs truncate">
                                                 {formatCurrency(totalRevenue)}
                                             </td>
-                                            <td className="px-1 py-3 text-right text-zinc-500 text-xs">
+                                            <td className="px-1 py-1 text-right text-zinc-500 text-xs">
                                                 %{costPercent.toFixed(0)}
                                             </td>
-                                            <td className="px-1 py-3 text-center">
+                                            <td className="px-1 py-1 text-center">
                                                 <button
                                                     onClick={() => removeSalesTarget(target.id)}
                                                     className="text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
@@ -260,18 +253,18 @@ export function TargetsView() {
                     </div>
 
                     {/* Packaging Costs Section (Inline Entry) */}
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                        <div className="flex justify-between items-center mb-6">
+                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+                        <div className="flex justify-between items-center mb-4">
                             <h3 className="font-bold text-white flex items-center gap-2">
                                 <Package size={20} className="text-orange-400" />
                                 Ambalaj Maliyetleri (Birim Başı)
                             </h3>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                             {/* Existing Items */}
                             {packagingCosts.map((item) => (
-                                <div key={item.id} className="flex items-center gap-3 bg-zinc-900 border border-zinc-800/50 p-1.5 rounded-lg group">
+                                <div key={item.id} className="flex items-center gap-3 bg-zinc-900 border border-zinc-800/50 p-1 rounded-lg group">
                                     {editingPkgId === item.id ? (
                                         <div className="flex-1 flex items-center gap-2">
                                             <input
@@ -280,7 +273,7 @@ export function TargetsView() {
                                                 value={editPkgName}
                                                 onChange={(e) => setEditPkgName(e.target.value)}
                                                 onFocus={(e) => e.target.select()}
-                                                className="flex-1 bg-zinc-800 text-white px-2 py-1 rounded border border-indigo-500/50 outline-none text-xs"
+                                                className="flex-1 bg-zinc-800 text-white px-2 py-0.5 rounded border border-indigo-500/50 outline-none text-xs"
                                                 onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
                                             />
                                             <input
@@ -288,7 +281,7 @@ export function TargetsView() {
                                                 value={editPkgAmount}
                                                 onChange={(e) => setEditPkgAmount(e.target.value)}
                                                 onFocus={(e) => e.target.select()}
-                                                className="w-20 bg-zinc-800 text-white text-right px-2 py-1 rounded border border-indigo-500/50 outline-none font-mono text-xs"
+                                                className="w-20 bg-zinc-800 text-white text-right px-2 py-0.5 rounded border border-indigo-500/50 outline-none font-mono text-xs"
                                                 onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
                                             />
                                             <button
@@ -315,7 +308,7 @@ export function TargetsView() {
                                             </div>
                                             <button
                                                 onClick={() => removePackagingCost(item.id)}
-                                                className="p-1.5 hover:bg-zinc-800 rounded text-zinc-600 hover:text-red-400 transition-colors"
+                                                className="p-1 hover:bg-zinc-800 rounded text-zinc-600 hover:text-red-400 transition-colors"
                                                 title="Sil"
                                             >
                                                 <Trash2 size={14} />
@@ -326,7 +319,7 @@ export function TargetsView() {
                             ))}
 
                             {/* Inline Add Row */}
-                            <div className="flex items-center gap-2 bg-zinc-800/20 p-1.5 rounded-lg border border-zinc-800 border-dashed">
+                            <div className="flex items-center gap-2 bg-zinc-800/20 p-1 rounded-lg border border-zinc-800 border-dashed">
                                 <input
                                     ref={nameRef}
                                     type="text"
@@ -360,7 +353,9 @@ export function TargetsView() {
 
                             <div className="flex justify-between items-center pt-2 border-t border-zinc-800 mt-2">
                                 <span className="text-sm text-zinc-400">Toplam Ambalaj (Birim Başı)</span>
-                                <span className="font-mono text-orange-400 font-bold">-{formatCurrency(packagingCostPerOrder)}</span>
+                                <div className="text-right">
+                                    <div className="font-mono text-orange-400 font-bold">-{formatCurrency(packagingCostPerOrder)}</div>
+                                </div>
                             </div>
                         </div>
                     </div>

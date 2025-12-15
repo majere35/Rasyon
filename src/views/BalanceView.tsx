@@ -96,7 +96,16 @@ export function BalanceView() {
 
     // --- Helper: Get Calculated Amount for Expense ---
     const getCalculatedAmount = (expense: Expense): number => {
-        if (!expense.isAutomated) return expense.amount;
+        if (!expense.isAutomated) {
+            // Special Logic for Rent (Stopaj)
+            // If Stopaj is selected, the input amount is NET.
+            // We need to gross it up for the "Expense" column because tax is also an expense.
+            // Gross = Net / 0.8
+            if (expense.name.toLowerCase() === 'kira' && expense.taxMethod === 'stopaj') {
+                return expense.amount / 0.8;
+            }
+            return expense.amount;
+        }
 
         switch (expense.autoType) {
             case 'food_cost':
@@ -115,6 +124,14 @@ export function BalanceView() {
     const getExpenseVat = (expense: Expense): number => {
         const amt = getCalculatedAmount(expense);
 
+        // Special Logic for Rent
+        if (expense.name.toLowerCase() === 'kira') {
+            if (expense.taxMethod === 'stopaj') return 0; // No VAT with Stopaj
+            // If VAT, it's 20% (standard for rent with invoice)
+            // Note: If VAT method, amt is Net (same as input), so vat is 20% of net.
+            return amt * 0.20;
+        }
+
         // Smart Defaults if vatRate is missing or generic
         if (expense.autoType === 'food_cost') return amt * 0.01; // %1 for Food
 
@@ -132,6 +149,14 @@ export function BalanceView() {
     const totalExpensesVat = allExpensesWithCalc.reduce((sum, e) => sum + e.finalVat, 0);
     const netProfit = monthlyRevenue - totalExpenses;
 
+    // --- Stopaj Calculation for Summary ---
+    // We need to tell the user how much Stopaj they will pay.
+    // Stopaj = Gross - Net. Or Gross * 0.20.
+    const totalStopaj = allExpensesWithCalc
+        .filter(e => e.name.toLowerCase() === 'kira' && e.taxMethod === 'stopaj')
+        .reduce((sum, e) => sum + (e.finalAmount * 0.20), 0);
+
+
     // --- Tax Logic (Replicated for 'True Net') ---
     const incomeVat = monthlyRevenue * 0.10;
     const vatDiff = incomeVat - totalExpensesVat;
@@ -143,7 +168,9 @@ export function BalanceView() {
     const companyType = company?.type;
 
     if (companyType === 'limited') {
-        incomeTax = monthlyRevenue * 0.25;
+        // Corporate Tax: 25% of Net Profit
+        const taxableIncome = Math.max(0, netProfit);
+        incomeTax = taxableIncome * 0.25;
     } else {
         // Şahıs Progressive
         const annualProfit = netProfit * 12;
@@ -379,24 +406,49 @@ export function BalanceView() {
                                                                 onFocus={(e) => e.target.select()}
                                                             />
                                                         ) : (
-                                                            <span
-                                                                className={`text-zinc-300 ${!expense.isAutomated ? 'cursor-pointer hover:text-white' : ''} truncate`}
-                                                                onClick={() => !expense.isAutomated && startEditing(expense, 'name')}
-                                                            >
-                                                                {expense.name}
+                                                            <div className="flex flex-col">
+                                                                <span
+                                                                    className={`text-zinc-300 ${!expense.isAutomated ? 'cursor-pointer hover:text-white' : ''} truncate`}
+                                                                    onClick={() => !expense.isAutomated && startEditing(expense, 'name')}
+                                                                >
+                                                                    {expense.name}
 
-                                                                {/* Show % Share for Food & Packaging */}
-                                                                {(expense.autoType === 'food_cost' || expense.autoType === 'packaging') && (
-                                                                    <>
-                                                                        <span className="ml-2 text-[10px] text-zinc-500 bg-zinc-900/50 px-1 rounded">
-                                                                            %{expenseRevenueShare.toFixed(1)}
-                                                                        </span>
-                                                                        <span className="ml-2 text-[10px] text-orange-400 font-bold tracking-wider opacity-80">
-                                                                            (OTOMATİK HESAPLANIR)
-                                                                        </span>
-                                                                    </>
+                                                                    {/* Show % Share for Food & Packaging */}
+                                                                    {(expense.autoType === 'food_cost' || expense.autoType === 'packaging') && (
+                                                                        <>
+                                                                            <span className="ml-2 text-[10px] text-zinc-500 bg-zinc-900/50 px-1 rounded">
+                                                                                %{expenseRevenueShare.toFixed(1)}
+                                                                            </span>
+                                                                            <span className="ml-2 text-[10px] text-orange-400 font-bold tracking-wider opacity-80">
+                                                                                (OTOMATİK HESAPLANIR)
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                </span>
+
+                                                                {/* RENT TAX SWITCH */}
+                                                                {expense.name.toLowerCase() === 'kira' && (
+                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                        <button
+                                                                            onClick={() => updateExpense(expense.id, { ...expense, taxMethod: 'kdv' })}
+                                                                            className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors ${!expense.taxMethod || expense.taxMethod === 'kdv' ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}`}
+                                                                        >
+                                                                            +KDV
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => updateExpense(expense.id, { ...expense, taxMethod: 'stopaj' })}
+                                                                            className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors ${expense.taxMethod === 'stopaj' ? 'bg-orange-500/20 border-orange-500/50 text-orange-300' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}`}
+                                                                        >
+                                                                            STOPAJ
+                                                                        </button>
+                                                                        {expense.taxMethod === 'stopaj' && (
+                                                                            <span className="text-[10px] text-zinc-600 ml-1">
+                                                                                (Brüt: {formatCurrency(getCalculatedAmount(expense))})
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
                                                                 )}
-                                                            </span>
+                                                            </div>
                                                         )
                                                     )}
                                                 </div>
@@ -509,11 +561,19 @@ export function BalanceView() {
                                 {EXPENSE_GROUPS.map(group => {
                                     const groupExpenses = allExpensesWithCalc.filter(e => e.group === group.id);
                                     const groupTotal = groupExpenses.reduce((sum, e) => sum + e.finalAmount, 0);
+                                    // Calculate percentage of revenue
+                                    const percentage = monthlyRevenue > 0 ? (groupTotal / monthlyRevenue) * 100 : 0;
+
                                     return (
                                         <div key={group.id} className="flex justify-between text-sm">
                                             <div className="flex items-center gap-1.5 text-zinc-500">
                                                 <group.icon size={12} className={group.color} />
-                                                <span>{group.title}</span>
+                                                <span>
+                                                    {group.title}
+                                                    <span className="text-zinc-600 text-xs ml-1">
+                                                        (%{percentage.toFixed(1)})
+                                                    </span>
+                                                </span>
                                             </div>
                                             <span className="text-zinc-300 font-mono">-{formatCurrency(groupTotal)}</span>
                                         </div>
@@ -529,12 +589,25 @@ export function BalanceView() {
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-xs">
-                                    <span className="text-zinc-600">Ödenecek Vergi (Tahmini)</span>
+                                    <span className="text-zinc-600">
+                                        {companyType === 'limited' ? 'Ödenecek Kurumlar Vergisi' : 'Ödenecek Gelir Vergisi'}
+                                    </span>
                                     <span className="text-red-400/70 font-mono">-{formatCurrency(incomeTax)}</span>
                                 </div>
+                                {totalStopaj > 0 && (
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-zinc-600">Ödenecek Stopaj (Kira)</span>
+                                        <span className="text-red-400/70 font-mono">-{formatCurrency(totalStopaj)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-xs">
                                     <span className="text-zinc-600">Ödenecek KDV (Tahmini)</span>
                                     <span className="text-red-400/70 font-mono">-{formatCurrency(payableVat)}</span>
+                                </div>
+                                <div className="w-full h-px bg-zinc-800/50 my-1"></div>
+                                <div className="flex justify-between text-xs font-bold text-red-400">
+                                    <span className="">Ödenecek Toplam Vergi</span>
+                                    <span className="font-mono">-{formatCurrency(incomeTax + payableVat + totalStopaj)}</span>
                                 </div>
                             </div>
 
@@ -551,7 +624,7 @@ export function BalanceView() {
                     </div>
 
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

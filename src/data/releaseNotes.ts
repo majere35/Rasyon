@@ -6,6 +6,16 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: 'v1.1.0',
+        changes: [
+            'Vergi: Kurumlar Vergisi hesaplaması "Net Kâr (%25)" üzerinden yapılmak üzere güncellendi.',
+            'Vergi: Kira Giderleri için KDV (%20) / Stopaj (%20 Net\'ten Brüt\'e) seçimi eklendi.',
+            'Vergi: Finansal Özet tablosuna "Ödenecek Toplam Vergi" (Kurumlar + KDV + Stopaj) satırı eklendi.',
+            'Arayüz: Tablolar daha kompakt hale getirildi, boşluklar azaltıldı.',
+            'Arayüz: KDV ve Stopaj butonları eklendi.'
+        ]
+    },
+    {
         version: 'v1.0.9',
         changes: [
             'Aylık Bilanço: Paket servis cirosu ve maliyetleri hesaplamaya dahil edildi.',

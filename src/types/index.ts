@@ -35,6 +35,7 @@ export interface Expense {
     autoType?: 'food_cost' | 'packaging' | 'percentage' | 'courier' | 'manual';
     autoValue?: number; // Stores %, ratio, or count
     vatRate?: number; // 0.20, 0.01 etc.
+    taxMethod?: 'kdv' | 'stopaj'; // For Rent: 'kdv' (20% VAT) or 'stopaj' (20% Withholding on Gross)
 }
 
 export interface CompanyInfo {
