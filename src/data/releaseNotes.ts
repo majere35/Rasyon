@@ -6,6 +6,14 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: '1.1.8',
+        date: '15.12.2025',
+        changes: [
+            'Ayarlar menüsüne manuel "Buluta Yükle / İndir" butonları eklendi.',
+            'Cihazlar arası zorunlu senkronizasyon özelliği getirildi.'
+        ]
+    },
+    {
         version: '1.1.7',
         date: '15.12.2025',
         changes: [
