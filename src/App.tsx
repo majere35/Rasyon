@@ -7,8 +7,7 @@ import { BalanceView } from './views/BalanceView';
 import { LoginView } from './views/LoginView';
 import { AdminView } from './views/AdminView';
 import { AdminUsersView } from './views/AdminUsersView';
-import { AdminReportsView } from './views/AdminPlaceholderViews';
-import { SettingsView } from './views/SettingsView';
+import { AdminReportsView, AdminSettingsView } from './views/AdminPlaceholderViews';
 import { useStore } from './store/useStore';
 import { WelcomeModal } from './components/WelcomeModal';
 import { auth } from './lib/firebase';
@@ -116,7 +115,7 @@ function App() {
             {activeTab === 'admin_dashboard' && <AdminView />}
             {activeTab === 'admin_users' && <AdminUsersView />}
             {activeTab === 'admin_reports' && <AdminReportsView />}
-            {activeTab === 'admin_settings' && <SettingsView />}
+            {activeTab === 'admin_settings' && <AdminSettingsView />}
           </>
         )}
       </DashboardLayout>

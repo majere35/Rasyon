@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { X, Moon, Sun, ScrollText, Book, CloudUpload, CloudDownload } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { APP_VERSION } from '../config';
@@ -16,51 +15,83 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncMsg, setSyncMsg] = useState('');
 
-    const handleCloudUpload = async () => {
-        const user = useStore.getState().user;
-        if (!user) return;
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-        if (!confirm('Bilgisayardaki veriler buluta yüklenecek ve buluttaki eski veriler silinecek. Onaylıyor musunuz?')) return;
+    const handleExport = () => {
+        const state = useStore.getState();
+        const dataToExport = {
+            recipes: state.recipes,
+            salesTargets: state.salesTargets,
+            expenses: state.expenses,
+            company: state.company,
+            daysWorkedInMonth: state.daysWorkedInMonth,
+            packagingCosts: state.packagingCosts,
+            rawIngredients: state.rawIngredients,
+            ingredientCategories: state.ingredientCategories,
+            theme: state.theme,
+            exportDate: new Date().toISOString(),
+            version: APP_VERSION
+        };
 
-        setIsSyncing(true);
-        setSyncMsg('Buluta yükleniyor...');
-        try {
-            const { saveUserData } = await import('../lib/db');
-            await saveUserData(user.uid, useStore.getState());
-            setSyncMsg('✅ Yüklendi!');
-            setTimeout(() => setSyncMsg(''), 2000);
-        } catch (error) {
-            console.error(error);
-            setSyncMsg('❌ Hata!');
-        } finally {
-            setIsSyncing(false);
+        const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `rasyon_yedek_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImportClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ''; // Reset input to allow same file selection
+            fileInputRef.current.click();
         }
     };
 
-    const handleCloudDownload = async () => {
-        const user = useStore.getState().user;
-        if (!user) return;
-
-        if (!confirm('Buluttaki veriler bu cihaza indirilecek ve buradaki verilerin üzerine yazılacak. Onaylıyor musunuz?')) return;
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
 
         setIsSyncing(true);
-        setSyncMsg('Buluttan indiriliyor...');
-        try {
-            const { getUserData } = await import('../lib/db');
-            const data = await getUserData(user.uid);
-            if (data) {
-                useStore.setState(data);
-                setSyncMsg('✅ İndirildi!');
-                setTimeout(() => window.location.reload(), 1000);
-            } else {
-                setSyncMsg('⚠️ Bulutta veri yok');
+        setSyncMsg('Yedek yükleniyor...');
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const data = JSON.parse(content);
+
+                // Basit doğrulama
+                if (!data.recipes || !Array.isArray(data.recipes)) {
+                    throw new Error("Geçersiz yedek dosyası formatı.");
+                }
+
+                // Veriyi store'a yükle
+                useStore.setState({
+                    recipes: data.recipes,
+                    salesTargets: data.salesTargets || [],
+                    expenses: data.expenses || [],
+                    company: data.company || null,
+                    daysWorkedInMonth: data.daysWorkedInMonth || 26,
+                    packagingCosts: data.packagingCosts || [],
+                    rawIngredients: data.rawIngredients || [],
+                    ingredientCategories: data.ingredientCategories || [],
+                    theme: data.theme || 'dark'
+                });
+
+                setSyncMsg('✅ Başarıyla yüklendi!');
+                setTimeout(() => window.location.reload(), 1500);
+
+            } catch (error) {
+                console.error("Import error:", error);
+                setSyncMsg('❌ Hata: Dosya bozuk');
+            } finally {
+                setTimeout(() => setIsSyncing(false), 2000);
             }
-        } catch (error) {
-            console.error(error);
-            setSyncMsg('❌ Hata!');
-        } finally {
-            setIsSyncing(false);
-        }
+        };
+        reader.readAsText(file);
     };
 
     if (!isOpen) return null;
@@ -94,32 +125,42 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             </button>
                         </div>
 
-                        {/* Cloud Sync Controls */}
+                        {/* Backup Controls */}
                         <div className="space-y-2">
-                            <div className="text-xs font-semibold text-zinc-500 ml-1">Veri Senkronizasyonu</div>
+                            <div className="text-xs font-semibold text-zinc-500 ml-1">Veri Yedekleme (Manuel)</div>
+
+                            {/* Hidden File Input */}
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                accept=".json"
+                                className="hidden"
+                            />
+
                             <div className="grid grid-cols-2 gap-3">
                                 <button
-                                    onClick={handleCloudUpload}
+                                    onClick={handleExport}
                                     disabled={isSyncing}
                                     className="flex flex-col items-center justify-center p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                                 >
-                                    {isSyncing && syncMsg.includes('Yüklendi') ? <CloudUpload size={20} className="mb-2 text-indigo-500" /> : <CloudUpload size={20} className="mb-2 text-zinc-600 dark:text-zinc-400" />}
-                                    <span className="font-medium text-xs text-zinc-900 dark:text-white">Buluta Yükle</span>
-                                    <span className="text-[10px] text-zinc-500 text-center leading-tight mt-1">Bu cihazdaki verileri buluta gönder</span>
+                                    <CloudUpload size={20} className="mb-2 text-indigo-500" />
+                                    <span className="font-medium text-xs text-zinc-900 dark:text-white">Yedek İndir</span>
+                                    <span className="text-[10px] text-zinc-500 text-center leading-tight mt-1">Verileri dosya olarak kaydet</span>
                                 </button>
 
                                 <button
-                                    onClick={handleCloudDownload}
+                                    onClick={handleImportClick}
                                     disabled={isSyncing}
                                     className="flex flex-col items-center justify-center p-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                                 >
-                                    {isSyncing && syncMsg.includes('İndir') ? <CloudDownload size={20} className="mb-2 text-green-500" /> : <CloudDownload size={20} className="mb-2 text-zinc-600 dark:text-zinc-400" />}
-                                    <span className="font-medium text-xs text-zinc-900 dark:text-white">Buluttan İndir</span>
-                                    <span className="text-[10px] text-zinc-500 text-center leading-tight mt-1">Buluttaki verileri bu cihaza çek</span>
+                                    <CloudDownload size={20} className="mb-2 text-green-500" />
+                                    <span className="font-medium text-xs text-zinc-900 dark:text-white">Yedek Yükle</span>
+                                    <span className="text-[10px] text-zinc-500 text-center leading-tight mt-1">Dosyadan veri geri yükle</span>
                                 </button>
                             </div>
                             {syncMsg && (
-                                <div className="text-center text-xs font-bold text-indigo-500 animate-pulse">
+                                <div className={`text-center text-xs font-bold animate-pulse ${syncMsg.includes('Hata') ? 'text-red-500' : 'text-indigo-500'}`}>
                                     {syncMsg}
                                 </div>
                             )}
