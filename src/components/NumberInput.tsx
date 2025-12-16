@@ -38,17 +38,26 @@ export function NumberInput({ value, onChange, min = 0, max, step = 1, className
     const handleIncrement = () => {
         const newValue = value + step;
         if (max !== undefined && newValue > max) return;
-        onChange(Number(newValue.toFixed(2))); // Fix potential floating point issues
+
+        // Calculate precision based on step
+        const precision = step.toString().split('.')[1]?.length || 0;
+        onChange(Number(newValue.toFixed(Math.max(precision, 2))));
     };
 
     const handleDecrement = () => {
         const newValue = value - step;
         if (min !== undefined && newValue < min) return;
-        onChange(Number(newValue.toFixed(2)));
+
+        // Calculate precision based on step
+        const precision = step.toString().split('.')[1]?.length || 0;
+        onChange(Number(newValue.toFixed(Math.max(precision, 2))));
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
+        let val = e.target.value;
+        // Replace comma with dot for Turkish input support
+        val = val.replace(',', '.');
+
         if (val === '') {
             onChange(0); // Or handle empty state if needed, but for now 0 is safe usually
             return;
