@@ -15,8 +15,17 @@ export function IngredientsView() {
         deleteRawIngredient,
         bulkDeleteRawIngredients,
         addIngredientCategory,
+        updateIngredientCategory,
         deleteIngredientCategory
     } = useStore();
+
+    // Color Palette - 16 Colors (4x4)
+    const COLORS = [
+        'bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500',
+        'bg-lime-500', 'bg-green-500', 'bg-emerald-500', 'bg-teal-500',
+        'bg-cyan-500', 'bg-sky-500', 'bg-blue-500', 'bg-indigo-500',
+        'bg-violet-500', 'bg-purple-500', 'bg-fuchsia-500', 'bg-pink-500'
+    ];
 
     // State
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -42,6 +51,10 @@ export function IngredientsView() {
     // Add Category Modal
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
+    const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+
+    // Color Popover State
+    const [editingColorId, setEditingColorId] = useState<string | null>(null);
 
     // Warning Modal
     const [warningMessage, setWarningMessage] = useState<string | null>(null);
@@ -153,6 +166,7 @@ export function IngredientsView() {
     // Category Management
     const handleAddCategoryClick = () => {
         setNewCategoryName('');
+        setSelectedColor(COLORS[0]);
         setIsCategoryModalOpen(true);
     };
 
@@ -162,11 +176,17 @@ export function IngredientsView() {
             addIngredientCategory({
                 id: crypto.randomUUID(),
                 name: newCategoryName.trim(),
-                color: 'bg-zinc-500'
+                color: selectedColor
             });
             setIsCategoryModalOpen(false);
             setNewCategoryName('');
+            setSelectedColor(COLORS[0]);
         }
+    };
+
+    const handleColorUpdate = (categoryId: string, color: string) => {
+        updateIngredientCategory(categoryId, { color });
+        setEditingColorId(null);
     };
 
     return (
@@ -208,8 +228,38 @@ export function IngredientsView() {
                                         : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                                         }`}
                                 >
-                                    <div className={`w-2 h-2 rounded-full ${cat.color}`}></div>
-                                    {cat.name}
+                                    <div className="relative">
+                                        <div
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingColorId(editingColorId === cat.id ? null : cat.id);
+                                            }}
+                                            className={`w-3 h-3 rounded-full ${cat.color} hover:ring-2 ring-white/20 transition-all cursor-pointer shrink-0`}
+                                        ></div>
+
+                                        {/* Color Picker Popover */}
+                                        {editingColorId === cat.id && (
+                                            <div
+                                                className="absolute left-0 top-full mt-2 z-50 bg-[#18181b] border border-zinc-800 rounded-xl shadow-2xl p-3 w-48 animate-in fade-in zoom-in-95"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {COLORS.map((color) => (
+                                                        <button
+                                                            key={color}
+                                                            onClick={() => handleColorUpdate(cat.id, color)}
+                                                            className={`w-8 h-8 rounded-full ${color} hover:scale-110 transition-transform ${cat.color === color ? 'ring-2 ring-white' : ''}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Click outside to close helper - simplest way is a fixed inset div */}
+                                        {editingColorId === cat.id && (
+                                            <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setEditingColorId(null); }} />
+                                        )}
+                                    </div>
+                                    <span className="truncate">{cat.name}</span>
                                 </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }}
@@ -269,6 +319,20 @@ export function IngredientsView() {
                     {(isAddMode && selectedCategory) && (
                         <div className="border-b border-indigo-500/30 bg-indigo-500/5 p-4 animate-in slide-in-from-top-2">
                             <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-4">
+                                {editingId && (
+                                    <div className="space-y-1 w-40">
+                                        <label className="text-xs font-semibold text-indigo-300 ml-1">Kategori</label>
+                                        <select
+                                            value={selectedCategory}
+                                            onChange={(e) => setSelectedCategory(e.target.value)}
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-white focus:border-indigo-500 outline-none text-sm h-[38px]"
+                                        >
+                                            {ingredientCategories.map(cat => (
+                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 <div className="space-y-1 flex-1 min-w-[200px]">
                                     <label className="text-xs font-semibold text-indigo-300 ml-1">Ürün Adı</label>
                                     <input
@@ -409,6 +473,20 @@ export function IngredientsView() {
                                     placeholder="Örn: Süt Ürünleri"
                                     className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500 transition-colors"
                                 />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Renk Seçimi</label>
+                                <div className="grid grid-cols-4 gap-3 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800">
+                                    {COLORS.map((color) => (
+                                        <button
+                                            key={color}
+                                            type="button"
+                                            onClick={() => setSelectedColor(color)}
+                                            className={`w-full aspect-square rounded-full ${color} hover:scale-110 transition-transform flex items-center justify-center ${selectedColor === color ? 'ring-2 ring-white scale-110' : ''}`}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                             <div className="flex justify-end gap-3 pt-2">
                                 <button

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Save, Upload, Image as ImageIcon } from 'lucide-react';
+import { X, Plus, Trash2, Save, Upload, Image as ImageIcon, Link, Copy } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { NumberInput } from './NumberInput';
 import type { Recipe, Ingredient } from '../types';
@@ -11,12 +11,16 @@ interface AddRecipeModalProps {
 }
 
 export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalProps) {
-    const { addRecipe, updateRecipe, rawIngredients } = useStore();
+    const { addRecipe, updateRecipe, rawIngredients, recipes } = useStore();
     const [name, setName] = useState('');
     const [ingredients, setIngredients] = useState<Omit<Ingredient, 'id'>[]>([]);
     const [costMultiplier, setCostMultiplier] = useState(2.5);
     const [image, setImage] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Copy Modal State
+    const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
+    const [copySourceId, setCopySourceId] = useState<string>('');
 
     // Autocomplete state
     const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
@@ -36,6 +40,8 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+
 
     // Local state for price input to prevent cursor jump/formatting issues while typing
     const [localPrice, setLocalPrice] = useState<string | null>(null);
@@ -67,25 +73,44 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
         }
     };
 
+    const setIngredientsWithFixedPrice = (newIngredients: typeof ingredients) => {
+        const currentTotal = ingredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+        const newTotal = newIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+        // If we have a valid price established (total > 0), try to maintain it
+        // by adjusting the multiplier
+        if (currentTotal > 0 && newTotal > 0) {
+            const currentPrice = currentTotal * costMultiplier;
+            const newMultiplier = currentPrice / newTotal;
+            setCostMultiplier(newMultiplier);
+        }
+
+        setIngredients(newIngredients);
+    };
+
     const addIngredientRow = () => {
-        setIngredients([...ingredients, { name: '', quantity: 0, unit: 'kg', price: 0 }]);
+        // Adding 0 cost item won't change total or multiplier
+        setIngredientsWithFixedPrice([...ingredients, { name: '', quantity: 0, unit: 'kg', price: 0 }]);
     };
 
     const removeIngredientRow = (index: number) => {
-        setIngredients(ingredients.filter((_, i) => i !== index));
+        const newIngredients = ingredients.filter((_, i) => i !== index);
+        setIngredientsWithFixedPrice(newIngredients);
     };
 
     const updateIngredient = (index: number, field: keyof Omit<Ingredient, 'id'> | 'rawIngredientId', value: string | number | null) => {
         const newIngredients = [...ingredients];
         newIngredients[index] = { ...newIngredients[index], [field]: value };
-        setIngredients(newIngredients);
+        setIngredientsWithFixedPrice(newIngredients);
     };
 
     const handleIngredientSearch = (index: number, query: string) => {
+        // If it was linked, unlink it when user types (or maybe prevent typing if linked? User said "editlenebilir olmasın")
+        // User said: "listeden seçtiğimizde de editlenebilir olmasın"
+        // This input should be readOnly if rawIngredientId is present.
+        // So this handler will only trigger for non-linked items OR if we allow clearing.
+
         updateIngredient(index, 'name', query);
-        // Clear link if name changes manually to something else (optional, but good for consistency)
-        // For now we keep the link unless they explicitly select another or we want to unlink on edit.
-        // Let's just track the active search.
         setSearchQuery(query);
         setActiveSearchIndex(index);
         setShowSuggestions(true);
@@ -100,7 +125,7 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
             price: rawIngredient.price,
             rawIngredientId: rawIngredient.id
         };
-        setIngredients(newIngredients);
+        setIngredientsWithFixedPrice(newIngredients);
         setShowSuggestions(false);
         setActiveSearchIndex(null);
     };
@@ -108,6 +133,8 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
     const filteredRawIngredients = searchQuery
         ? rawIngredients.filter(ri => ri.name.toLowerCase().includes(searchQuery.toLowerCase()))
         : rawIngredients;
+
+
 
     const calculateTotalCost = () => {
         return ingredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
@@ -134,6 +161,27 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
             addRecipe(recipeData);
         }
         onClose();
+    };
+
+    const handleCopyRecipe = () => {
+        if (!copySourceId) return;
+
+        const sourceRecipe = recipes.find(r => r.id === copySourceId);
+        if (sourceRecipe) {
+            // Map ingredients to new objects to avoid reference issues
+            // but PRESERVE rawIngredientId to keep the link to global stock
+            const copiedIngredients = sourceRecipe.ingredients.map(ing => ({
+                name: ing.name,
+                quantity: ing.quantity,
+                unit: ing.unit,
+                price: ing.price,
+                rawIngredientId: ing.rawIngredientId // Crucial: Maintain the link
+            }));
+
+            setIngredientsWithFixedPrice(copiedIngredients);
+            setIsCopyModalOpen(false);
+            setCopySourceId('');
+        }
     };
 
     if (!isOpen) return null;
@@ -278,9 +326,18 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                         <div className="lg:col-span-8 flex flex-col h-full bg-zinc-900/20 border border-zinc-800/50 rounded-xl overflow-hidden">
                             <div className="bg-zinc-900/50 border-b border-zinc-800 px-4 py-2 flex justify-between items-center">
                                 <h3 className="text-sm font-semibold text-zinc-300">Reçete Malzemeleri</h3>
-                                <button onClick={addIngredientRow} type="button" className="text-indigo-400 text-xs hover:text-indigo-300 flex items-center gap-1 font-medium bg-indigo-500/10 px-2 py-1 rounded hover:bg-indigo-500/20 transition-colors">
-                                    <Plus size={14} /> Satır Ekle
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setIsCopyModalOpen(true)}
+                                        type="button"
+                                        className="text-zinc-400 text-xs hover:text-white flex items-center gap-1 font-medium bg-zinc-800 px-2 py-1 rounded hover:bg-zinc-700 transition-colors"
+                                    >
+                                        <Copy size={14} /> Reçeteden Kopyala
+                                    </button>
+                                    <button onClick={addIngredientRow} type="button" className="text-indigo-400 text-xs hover:text-indigo-300 flex items-center gap-1 font-medium bg-indigo-500/10 px-2 py-1 rounded hover:bg-indigo-500/20 transition-colors">
+                                        <Plus size={14} /> Satır Ekle
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex-1 overflow-auto">
@@ -288,7 +345,7 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                     <thead className="bg-zinc-900/80 text-zinc-500 font-medium sticky top-0 z-10 backdrop-blur-sm">
                                         <tr>
                                             <th className="px-3 py-2 text-xs uppercase tracking-wider pl-4">Malzeme</th>
-                                            <th className="px-2 py-2 w-20 text-xs uppercase tracking-wider">Miktar</th>
+                                            <th className="px-2 py-2 w-32 text-xs uppercase tracking-wider">Miktar</th>
                                             <th className="px-2 py-2 w-20 text-xs uppercase tracking-wider">Birim</th>
                                             <th className="px-2 py-2 w-24 text-xs uppercase tracking-wider">Birim Fiyat</th>
                                             <th className="px-2 py-2 w-24 text-xs uppercase tracking-wider text-right">Tutar</th>
@@ -299,20 +356,32 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                         {ingredients.map((item, index) => (
                                             <tr key={index} className="group hover:bg-zinc-800/30 transition-colors">
                                                 <td className="p-2 pl-4 relative">
-                                                    <input
-                                                        type="text"
-                                                        value={item.name}
-                                                        onChange={(e) => handleIngredientSearch(index, e.target.value)}
-                                                        onFocus={() => {
-                                                            setActiveSearchIndex(index);
-                                                            setSearchQuery(item.name);
-                                                            setShowSuggestions(true);
-                                                        }}
-                                                        placeholder="Malzeme adı..."
-                                                        className={`w-full bg-transparent border-none p-0 text-zinc-200 placeholder-zinc-700 focus:ring-0 text-sm ${item.rawIngredientId ? 'text-indigo-400 font-medium' : ''}`}
-                                                    />
+                                                    <div className="relative">
+                                                        <input
+                                                            type="text"
+                                                            value={item.name}
+                                                            onChange={(e) => handleIngredientSearch(index, e.target.value)}
+                                                            onFocus={() => {
+                                                                if (!item.rawIngredientId) {
+                                                                    setActiveSearchIndex(index);
+                                                                    setSearchQuery(item.name);
+                                                                    setShowSuggestions(true);
+                                                                }
+                                                            }}
+                                                            readOnly={!!item.rawIngredientId}
+                                                            placeholder="Malzeme adı..."
+                                                            className={`w-full bg-transparent border-dashed border-b p-0 text-sm pb-1 focus:ring-0 ${item.rawIngredientId
+                                                                ? 'text-indigo-400 font-medium border-transparent'
+                                                                : 'text-zinc-200 border-zinc-700 placeholder-zinc-700 focus:border-indigo-500'
+                                                                }`}
+                                                        />
+                                                        {item.rawIngredientId && (
+                                                            <Link size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-indigo-500/50" />
+                                                        )}
+                                                    </div>
+
                                                     {/* Auto-complete Dropdown */}
-                                                    {showSuggestions && activeSearchIndex === index && (
+                                                    {showSuggestions && activeSearchIndex === index && !item.rawIngredientId && (
                                                         <div ref={searchRef} className="absolute left-0 top-full mt-1 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
                                                             {filteredRawIngredients.length > 0 ? (
                                                                 filteredRawIngredients.map(ri => (
@@ -343,27 +412,36 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                     />
                                                 </td>
                                                 <td className="p-2">
-                                                    <select
-                                                        value={item.unit}
-                                                        onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                                                        className="w-full bg-zinc-800/50 rounded px-1 py-1 text-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 text-xs"
-                                                    >
-                                                        <option value="adet">Adet</option>
-                                                        <option value="kg">Kg</option>
-                                                        <option value="gr">Gr</option>
-                                                        <option value="lt">Lt</option>
-                                                        <option value="cl">Cl</option>
-                                                    </select>
+                                                    {item.rawIngredientId ? (
+                                                        <div className="text-zinc-400 text-sm px-1 py-1">{item.unit}</div>
+                                                    ) : (
+                                                        <select
+                                                            value={item.unit}
+                                                            onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
+                                                            className="w-full bg-zinc-800/50 rounded px-1 py-1 text-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 text-xs"
+                                                        >
+                                                            <option value="adet">Adet</option>
+                                                            <option value="kg">Kg</option>
+                                                            <option value="gr">Gr</option>
+                                                            <option value="lt">Lt</option>
+                                                            <option value="cl">Cl</option>
+                                                        </select>
+                                                    )}
                                                 </td>
                                                 <td className="p-2">
-                                                    <NumberInput
-                                                        value={item.price}
-                                                        onChange={(val) => updateIngredient(index, 'price', val)}
-                                                        className="w-full"
-                                                        placeholder="0.00"
-                                                        step={0.001}
-                                                    />
-                                                </td>
+                                                    {item.rawIngredientId ? (
+                                                        <div className="text-zinc-400 font-mono text-sm px-1 opacity-70 cursor-not-allowed">
+                                                            {item.price.toFixed(2)}
+                                                        </div>
+                                                    ) : (
+                                                        <NumberInput
+                                                            value={item.price}
+                                                            onChange={(val) => updateIngredient(index, 'price', val)}
+                                                            className="w-full"
+                                                            placeholder="0.00"
+                                                            step={0.001}
+                                                        />
+                                                    )}                                                </td>
                                                 <td className="p-2 text-right font-mono text-zinc-400 text-sm">
                                                     {(item.quantity * item.price).toFixed(2)}
                                                 </td>
@@ -417,6 +495,57 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                     </button>
                 </div>
             </div>
+
+            {/* Copy Recipe Modal */}
+            {isCopyModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#18181b] border border-zinc-800 w-full max-w-sm rounded-xl shadow-2xl p-6">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <Copy size={20} className="text-indigo-500" />
+                            Reçeteden Kopyala
+                        </h3>
+                        <p className="text-zinc-400 text-sm mb-4">
+                            Aşağıdaki listeden içeriğini kopyalamak istediğiniz reçeteyi seçin. <strong className="text-red-400">Mevcut malzemeler silinecek</strong> ve seçilen reçetenin malzemeleri eklenecektir.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Kaynak Reçete</label>
+                                <select
+                                    value={copySourceId}
+                                    onChange={(e) => setCopySourceId(e.target.value)}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white outline-none focus:border-indigo-500 h-[42px]"
+                                >
+                                    <option value="">Reçete Seçin...</option>
+                                    {recipes.filter(r => r.id !== editRecipe?.id).map(recipe => (
+                                        <option key={recipe.id} value={recipe.id}>
+                                            {recipe.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCopyModalOpen(false)}
+                                    className="px-4 py-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all text-sm font-medium"
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleCopyRecipe}
+                                    disabled={!copySourceId}
+                                    className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium"
+                                >
+                                    Kopyala
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

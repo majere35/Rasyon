@@ -6,6 +6,16 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: 'v1.1.2',
+        changes: [
+            "Kategoriler için 16'lı renk paleti eklendi.",
+            "Reçeteden Kopyala özelliği eklendi (mevcut içeriği değiştirir).",
+            "Sabit Satış Fiyatı mantığı: Maliyet değiştiğinde fiyat sabit kalır, kâr oranı güncellenir.",
+            "Malzeme düzenleme ekranında kategori değiştirme özelliği eklendi.",
+            "Reçete miktar alanı genişletildi (0,0002 desteği)."
+        ]
+    },
+    {
         version: '1.1.11',
         date: '15.12.2025',
         changes: [

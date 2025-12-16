@@ -142,11 +142,23 @@ export const useStore = create<AppState>()(
                         return ing;
                     });
 
+                    // Calculate new total cost
                     const newTotalCost = newRecipeIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+                    // LOGIC CHANGE: Keep calculatedPrice FIXED, update costMultiplier
+                    // Old Logic: costMultiplier fixed, calculatedPrice changes (implicitly via UI or simple recalc)
+                    // New Logic: calculatedPrice fixed, costMultiplier = calculatedPrice / newTotalCost
+
+                    let newCostMultiplier = recipe.costMultiplier;
+                    if (newTotalCost > 0 && recipe.calculatedPrice > 0) {
+                        newCostMultiplier = recipe.calculatedPrice / newTotalCost;
+                    }
+
                     return {
                         ...recipe,
                         ingredients: newRecipeIngredients,
-                        totalCost: newTotalCost
+                        totalCost: newTotalCost,
+                        costMultiplier: newCostMultiplier
                     };
                 });
 
@@ -162,6 +174,12 @@ export const useStore = create<AppState>()(
 
             addIngredientCategory: (category) => set((state) => ({
                 ingredientCategories: [...state.ingredientCategories, category]
+            })),
+
+            updateIngredientCategory: (id: string, updated: Partial<any>) => set((state) => ({
+                ingredientCategories: state.ingredientCategories.map(item =>
+                    item.id === id ? { ...item, ...updated } : item
+                )
             })),
 
             deleteIngredientCategory: (id) => set((state) => ({

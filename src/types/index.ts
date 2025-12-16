@@ -87,6 +87,7 @@ export interface AppState {
     deleteRawIngredient: (id: string) => void;
     bulkDeleteRawIngredients: (ids: string[]) => void;
     addIngredientCategory: (category: IngredientCategory) => void;
+    updateIngredientCategory: (id: string, updated: Partial<IngredientCategory>) => void;
     deleteIngredientCategory: (id: string) => void;
 
     addRecipe: (recipe: Recipe) => void;
