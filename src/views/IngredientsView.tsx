@@ -287,7 +287,7 @@ export function IngredientsView() {
                                         value={formData.price || 0}
                                         onChange={val => setFormData({ ...formData, price: val })}
                                         className="w-full bg-zinc-900"
-                                        step={0.0001}
+                                        step={0.001}
                                     />
                                 </div>
                                 <div className="space-y-1 w-24">

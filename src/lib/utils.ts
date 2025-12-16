@@ -22,7 +22,7 @@ export function formatNumber(amount: number): string {
     try {
         return new Intl.NumberFormat('tr-TR', {
             minimumFractionDigits: 0,
-            maximumFractionDigits: 2
+            maximumFractionDigits: 3
         }).format(amount);
     } catch (error) {
         console.error("Format number error:", error);

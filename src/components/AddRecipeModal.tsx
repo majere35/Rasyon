@@ -339,6 +339,7 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                         onChange={(val) => updateIngredient(index, 'quantity', val)}
                                                         className="w-full"
                                                         placeholder="0"
+                                                        step={0.001}
                                                     />
                                                 </td>
                                                 <td className="p-2">
@@ -360,7 +361,7 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                         onChange={(val) => updateIngredient(index, 'price', val)}
                                                         className="w-full"
                                                         placeholder="0.00"
-                                                        step={0.1}
+                                                        step={0.001}
                                                     />
                                                 </td>
                                                 <td className="p-2 text-right font-mono text-zinc-400 text-sm">
