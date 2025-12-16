@@ -46,6 +46,7 @@ function App() {
 
     // 1. Load Data on Login
     import('./lib/db').then(async ({ getUserData, updateUserMetadata }) => {
+      console.log("[Sync] Starting initial sync for:", user.uid);
       const remoteData = await getUserData(user.uid);
       const localState = useStore.getState();
 
@@ -58,13 +59,17 @@ function App() {
       // Check if local state has meaningful data (not just defaults, but we assume if they exist they are meaningful for now)
       const hasLocalData = localState.recipes.length > 0 || localState.expenses.length > 0;
 
+      console.log(`[Sync] Status - Remote Data: ${!!hasRemoteData}, Local Data: ${hasLocalData}`);
+
       if (hasRemoteData) {
-        console.log("Remote data found, syncing to local...");
+        console.log("[Sync] Priority: REMOTE. Overwriting local state with cloud data.");
         useStore.setState(remoteData);
       } else if (hasLocalData) {
-        console.log("No meaningful remote data, syncing local data to cloud...");
+        console.log("[Sync] Priority: LOCAL. No cloud data found, uploading local data.");
         const { saveUserData } = await import('./lib/db');
         saveUserData(user.uid, localState);
+      } else {
+        console.log("[Sync] No meaningful data on both ends. Starting fresh.");
       }
 
       // Update metadata after sync decision
@@ -75,6 +80,7 @@ function App() {
     // Note: useStore.subscribe returns an unsubscribe function
     const unsubStore = useStore.subscribe(async (state) => {
       if (user) {
+        console.log("[Sync] Store updated, triggering save...");
         const { saveUserData } = await import('./lib/db');
         saveUserData(user.uid, state);
       }

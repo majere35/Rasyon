@@ -4,25 +4,40 @@ import type { AppState } from '../types';
 
 export const PRESETS = ['recipes', 'salesTargets', 'expenses', 'packagingCosts', 'company', 'daysWorkedInMonth', 'rawIngredients', 'ingredientCategories'];
 
+
 export async function getUserData(uid: string): Promise<Partial<AppState> | null> {
-    const docRef = doc(db, 'users', uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        return docSnap.data() as Partial<AppState>;
+    try {
+        console.log(`[DB] Fetching data for user: ${uid}`);
+        const docRef = doc(db, 'users', uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            console.log(`[DB] Data found for user: ${uid}`, docSnap.data());
+            return docSnap.data() as Partial<AppState>;
+        }
+        console.log(`[DB] No data found for user: ${uid}`);
+        return null;
+    } catch (error) {
+        console.error(`[DB] Error fetching user data:`, error);
+        return null;
     }
-    return null;
 }
 
 export async function saveUserData(uid: string, data: Partial<AppState>) {
-    const cleanData: any = {};
-    PRESETS.forEach(key => {
-        if ((data as any)[key] !== undefined) {
-            cleanData[key] = (data as any)[key];
-        }
-    });
+    try {
+        const cleanData: any = {};
+        PRESETS.forEach(key => {
+            if ((data as any)[key] !== undefined) {
+                cleanData[key] = (data as any)[key];
+            }
+        });
 
-    const docRef = doc(db, 'users', uid);
-    await setDoc(docRef, cleanData, { merge: true });
+        console.log(`[DB] Saving data for user: ${uid}`, cleanData);
+        const docRef = doc(db, 'users', uid);
+        await setDoc(docRef, cleanData, { merge: true });
+        console.log(`[DB] Data saved successfully.`);
+    } catch (error) {
+        console.error(`[DB] Error saving user data:`, error);
+    }
 }
 
 export async function updateUserMetadata(user: any) {
