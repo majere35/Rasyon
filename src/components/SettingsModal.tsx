@@ -86,7 +86,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
             } catch (error) {
                 console.error("Import error:", error);
-                setSyncMsg('❌ Hata: Dosya bozuk');
+                const errorMessage = error instanceof Error ? error.message : 'Dosya bozuk';
+                setSyncMsg(`❌ Hata: ${errorMessage}`);
             } finally {
                 setTimeout(() => setIsSyncing(false), 2000);
             }

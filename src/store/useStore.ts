@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { AppState, Recipe, SalesTarget, Expense } from '../types';
+import { storage } from '../lib/storage';
 
 export const useStore = create<AppState>()(
     persist(
@@ -208,6 +209,7 @@ export const useStore = create<AppState>()(
         }),
         {
             name: 'resto-app-storage',
+            storage: createJSONStorage(() => storage),
             partialize: (state) => ({
                 recipes: state.recipes,
                 salesTargets: state.salesTargets,
