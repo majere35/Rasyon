@@ -34,7 +34,7 @@ export function CustomDatePicker({ value, onChange, placeholder = 'Tarih Seç', 
                 setIsOpen(false);
             }
         };
-        const handleScroll = (event: Event) => {
+        const handleScroll = () => {
             if (isOpen) setIsOpen(false);
         };
 

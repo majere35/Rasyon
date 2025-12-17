@@ -1,7 +1,7 @@
 
 import { useMemo } from 'react';
-import { Building2, Factory, Truck, Users, TrendingUp, Wallet, Banknote } from 'lucide-react';
-import type { MonthlyMonthData, Invoice, DailySale } from '../types';
+import { Building2, Factory, Truck, Users, TrendingUp, Banknote } from 'lucide-react';
+import type { MonthlyMonthData } from '../types';
 
 // Basic formatter
 const formatCurrency = (amount: number) => {
@@ -234,7 +234,7 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
 
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2 relative z-10">
                         <TrendingUp className="text-green-500" />
-                        Finansal Özet ({data.month})
+                        Finansal Özet ({data.monthStr})
                     </h3>
 
                     <div className="space-y-4 relative z-10">

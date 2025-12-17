@@ -246,6 +246,15 @@ export const MonthlyAccountingView = () => {
                     !loading && <div className="text-center p-12 text-zinc-500">Görüntülenecek veri yok.</div>
                 )}
             </div>
+            {/* Main View Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={closeConfirm}
+                type={confirmModal.type}
+            />
         </div>
     );
 };
