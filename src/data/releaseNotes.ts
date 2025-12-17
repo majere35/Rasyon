@@ -6,6 +6,16 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: 'v1.2.0',
+        date: '17.12.2025',
+        changes: [
+            'Gerçekleşen Hesaplar Modülü: Yeni sekme yapısı (Gider -> Gelir -> Bilanço).',
+            'Otomatik Kayıt Sistemi: Artık manuel kaydetmeye gerek yok.',
+            'UI İyileştirmeleri: Modern onay pencereleri ve optimize edilmiş formlar.',
+            'Bilanço: 15 standart kategori ve online komisyon hesaplaması.'
+        ]
+    },
+    {
         version: 'v1.1.2',
         changes: [
             "Kategoriler için 16'lı renk paleti eklendi.",
