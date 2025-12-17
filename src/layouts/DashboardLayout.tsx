@@ -4,7 +4,7 @@ import { MobileNav } from '../components/MobileNav';
 import { useStore } from '../store/useStore';
 import { ChefHat } from 'lucide-react';
 
-export type ActiveTab = 'recipes' | 'ingredients' | 'targets' | 'balance' | 'admin_dashboard' | 'admin_users' | 'admin_reports' | 'admin_settings';
+export type ActiveTab = 'recipes' | 'ingredients' | 'targets' | 'balance' | 'monthly_accounting' | 'admin_dashboard' | 'admin_users' | 'admin_reports' | 'admin_settings';
 
 interface DashboardLayoutProps {
     children: (activeTab: ActiveTab) => React.ReactNode;

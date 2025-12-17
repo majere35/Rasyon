@@ -206,6 +206,26 @@ export const useStore = create<AppState>()(
             removePackagingCost: (id) => set((state) => ({
                 packagingCosts: state.packagingCosts.filter(p => p.id !== id)
             })),
+
+            // --- Monthly Accounting Actions ---
+            monthlyClosings: [],
+
+            saveMonthlyData: (data: any) => set((state) => {
+                // Check if exists
+                const index = state.monthlyClosings.findIndex(m => m.monthStr === data.monthStr);
+                let newClosings;
+                if (index !== -1) {
+                    newClosings = [...state.monthlyClosings];
+                    newClosings[index] = data;
+                } else {
+                    newClosings = [...state.monthlyClosings, data];
+                }
+                return { monthlyClosings: newClosings };
+            }),
+
+            deleteMonthlyData: (monthStr: string) => set((state) => ({
+                monthlyClosings: state.monthlyClosings.filter(m => m.monthStr !== monthStr)
+            })),
         }),
         {
             name: 'resto-app-storage',
@@ -219,6 +239,7 @@ export const useStore = create<AppState>()(
                 packagingCosts: state.packagingCosts,
                 rawIngredients: state.rawIngredients,
                 ingredientCategories: state.ingredientCategories,
+                monthlyClosings: state.monthlyClosings, // Persist monthly data
             }),
         }
     )

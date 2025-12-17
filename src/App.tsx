@@ -4,6 +4,7 @@ import { RecipesView } from './views/RecipesView';
 import { IngredientsView } from './views/IngredientsView';
 import { TargetsView } from './views/TargetsView';
 import { BalanceView } from './views/BalanceView';
+import { MonthlyAccountingView } from './views/MonthlyAccountingView';
 import { LoginView } from './views/LoginView';
 import { AdminView } from './views/AdminView';
 import { AdminUsersView } from './views/AdminUsersView';
@@ -111,6 +112,7 @@ function App() {
             {activeTab === 'ingredients' && <IngredientsView />}
             {activeTab === 'targets' && <TargetsView />}
             {activeTab === 'balance' && <BalanceView />}
+            {activeTab === 'monthly_accounting' && <MonthlyAccountingView />}
 
             {activeTab === 'admin_dashboard' && <AdminView />}
             {activeTab === 'admin_users' && <AdminUsersView />}

@@ -28,6 +28,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             packagingCosts: state.packagingCosts,
             rawIngredients: state.rawIngredients,
             ingredientCategories: state.ingredientCategories,
+            monthlyClosings: state.monthlyClosings,
             theme: state.theme,
             exportDate: new Date().toISOString(),
             version: APP_VERSION
@@ -78,6 +79,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     packagingCosts: data.packagingCosts || [],
                     rawIngredients: data.rawIngredients || [],
                     ingredientCategories: data.ingredientCategories || [],
+                    monthlyClosings: data.monthlyClosings || [],
                     theme: data.theme || 'dark'
                 });
 

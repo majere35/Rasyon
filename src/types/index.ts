@@ -108,4 +108,51 @@ export interface AppState {
 
     setDaysWorked: (days: number) => void;
     initializeDefaults: () => void;
+
+    // Monthly Accounting (Local Only Mode)
+    monthlyClosings: MonthlyMonthData[]; // All monthly data stored locally
+    saveMonthlyData: (data: MonthlyMonthData) => void;
+    deleteMonthlyData: (monthStr: string) => void;
+}
+
+export interface Invoice {
+    id: string;
+    date: string; // ISO date string YYYY-MM-DD
+    supplier: string;
+    description: string;
+    category: string; // e.g. "Gıda", "Ambalaj", "Enerji", "Vergi/Stopaj", "Diğer"
+    amount: number;
+    taxRate: number; // 0, 1, 10, 20 etc.
+    status: 'paid' | 'pending';
+    paymentDate?: string;
+}
+
+export interface DailySale {
+    id: string;
+    date: string; // ISO date string YYYY-MM-DD
+    cash: number;
+    creditCard: number;
+    mealCard: number; // Multinet, Sodexo etc.
+    // Online Platforms
+    yemeksepeti: number;
+    trendyol: number;
+    getirYemek: number;
+    migrosYemek: number;
+    online: number; // Legacy or generic online
+    totalAmount: number;
+    note?: string;
+}
+
+export interface MonthlyMonthData {
+    id: string; // YYYY-MM format used as ID
+    monthStr: string; // "2025-12"
+    isClosed: boolean;
+    closedAt?: string;
+    invoices: Invoice[];
+    dailySales: DailySale[];
+
+    // Snapshots of calculated values at closing time
+    totalExpenses?: number;
+    totalIncome?: number;
+    netProfit?: number;
 }

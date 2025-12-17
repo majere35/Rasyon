@@ -88,7 +88,7 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Seçiniz
         return createPortal(
             <div
                 ref={portalRef}
-                className="fixed z-[9999] bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                className="fixed z-[9999] bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100"
                 style={{
                     top: position.top - window.scrollY, // Fixed position needs screen relative coords
                     left: position.left - window.scrollX,
@@ -98,14 +98,14 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Seçiniz
                 onClick={(e) => e.stopPropagation()}
             >
                 {searchable && (
-                    <div className="p-2 border-b border-zinc-800">
+                    <div className="p-2 border-b border-zinc-100 dark:border-zinc-800">
                         <div className="relative">
                             <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-zinc-500" size={14} />
                             <input
                                 autoFocus
                                 type="text"
                                 placeholder="Ara..."
-                                className="w-full bg-zinc-800 text-sm text-white rounded pl-8 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="w-full bg-zinc-50 dark:bg-zinc-800 text-sm text-zinc-900 dark:text-white rounded pl-8 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 border border-zinc-200 dark:border-transparent"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -120,8 +120,8 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Seçiniz
                                 key={option.value}
                                 onClick={() => handleSelect(option.value)}
                                 className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between ${option.value === value
-                                    ? 'bg-indigo-500/10 text-indigo-400'
-                                    : 'text-zinc-300 hover:bg-zinc-800'
+                                    ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                                    : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                                     }`}
                             >
                                 <span>{option.label}</span>
@@ -143,9 +143,9 @@ export function CustomSelect({ value, onChange, options, placeholder = 'Seçiniz
         <div className={`relative ${className}`} ref={containerRef}>
             <div
                 onClick={toggleOpen}
-                className="w-full bg-zinc-900/50 border border-zinc-700 rounded-lg px-3 py-2 text-white flex items-center justify-between cursor-pointer hover:border-zinc-600 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-zinc-900 dark:text-white flex items-center justify-between cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
-                <span className={`truncate mr-2 ${selectedOption ? 'text-white' : 'text-zinc-500'}`}>
+                <span className={`truncate mr-2 ${selectedOption ? 'text-zinc-900 dark:text-white' : 'text-zinc-500'}`}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
                 <ChevronDown size={16} className={`text-zinc-500 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />

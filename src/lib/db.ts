@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, collection, onSnapshot, getDocs } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, onSnapshot, getDocs, deleteField } from 'firebase/firestore';
 import { db } from './firebase';
 import type { AppState } from '../types';
 
@@ -134,5 +134,71 @@ export async function getAllUsers() {
 }
 
 
-// End of file
+
+// --- Monthly Accounting & Closing Functions ---
+
+import type { MonthlyMonthData } from '../types';
+
+export async function getMonthlyData(uid: string, monthStr: string): Promise<MonthlyMonthData | null> {
+    try {
+        const docRef = doc(db, 'users', uid, 'monthly_closings', monthStr);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return docSnap.data() as MonthlyMonthData;
+        }
+        return null; // Month not started/saved yet
+    } catch (error) {
+        console.error(`[DB] Error fetching monthly data (${monthStr}):`, error);
+        return null;
+    }
+}
+
+export async function saveMonthlyData(uid: string, monthStr: string, data: Partial<MonthlyMonthData>) {
+    try {
+        const docRef = doc(db, 'users', uid, 'monthly_closings', monthStr);
+        // Ensure ID and monthStr are set
+        const payload = {
+            ...data,
+            id: monthStr,
+            monthStr: monthStr,
+            updatedAt: new Date().toISOString()
+        };
+        await setDoc(docRef, payload, { merge: true });
+        console.log(`[DB] Saved monthly data for ${monthStr}`);
+    } catch (error) {
+        console.error(`[DB] Error saving monthly data (${monthStr}):`, error);
+        throw error;
+    }
+}
+
+export async function lockMonth(uid: string, monthStr: string, totals: { totalExpenses: number, totalIncome: number, netProfit: number }) {
+    try {
+        const docRef = doc(db, 'users', uid, 'monthly_closings', monthStr);
+        await setDoc(docRef, {
+            isClosed: true,
+            closedAt: new Date().toISOString(),
+            ...totals
+        }, { merge: true });
+        console.log(`[DB] Month ${monthStr} LOCKED.`);
+    } catch (error) {
+        console.error(`[DB] Error locking month (${monthStr}):`, error);
+        throw error;
+    }
+}
+
+export async function unlockMonth(uid: string, monthStr: string) {
+    try {
+        const docRef = doc(db, 'users', uid, 'monthly_closings', monthStr);
+        // We remove 'closedAt' and set 'isClosed' to false. 
+        // We might want to keep calculated totals or clear them. Keeping them is safer for reference until re-closed.
+        await setDoc(docRef, {
+            isClosed: false,
+            closedAt: deleteField()
+        }, { merge: true });
+        console.log(`[DB] Month ${monthStr} UNLOCKED.`);
+    } catch (error) {
+        console.error(`[DB] Error unlocking month (${monthStr}):`, error);
+        throw error;
+    }
+}
 
