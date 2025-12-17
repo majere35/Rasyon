@@ -6,7 +6,7 @@ import { CustomSelect } from '../components/CustomSelect';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { MonthlyBalanceTab } from '../components/MonthlyBalanceTab';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { Loader2, Plus, Calendar as CalendarIcon, Save, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, History, Check } from 'lucide-react';
+import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, History, Check } from 'lucide-react';
 
 // Basic formatter
 const formatCurrency = (amount: number) => {
@@ -21,7 +21,7 @@ const formatDateTR = (dateStr: string) => {
 
 export const MonthlyAccountingView = () => {
     // Access Global Store
-    const { monthlyClosings, saveMonthlyData, deleteMonthlyData } = useStore();
+    const { monthlyClosings, saveMonthlyData } = useStore();
 
     const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // "YYYY-MM"
     const [loading, setLoading] = useState(false);
