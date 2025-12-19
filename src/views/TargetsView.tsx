@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import { CustomSelect } from '../components/CustomSelect';
 import { NumberInput } from '../components/NumberInput';
 import { TaxSummary } from '../components/TaxSummary';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { formatCurrency } from '../lib/utils';
 import type { SalesTarget, Expense } from '../types';
 
@@ -18,6 +19,10 @@ export function TargetsView() {
     const [editingPkgId, setEditingPkgId] = useState<string | null>(null);
     const [editPkgName, setEditPkgName] = useState('');
     const [editPkgAmount, setEditPkgAmount] = useState('');
+
+    // Delete Confirmation State
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [deleteType, setDeleteType] = useState<'target' | 'packaging' | null>(null);
 
     // Calculate Totals
     const totalDailyItems = salesTargets.reduce((sum, target) => sum + (target.dailyTarget || 0) + (target.packageDailyTarget || 0), 0);
@@ -59,6 +64,7 @@ export function TargetsView() {
     const totalDailyProfit = totalDailyRevenue - totalDailyCost - totalDailyPackagingCost;
     const avgRevenuePerItem = totalDailyItems > 0 ? totalDailyRevenue / totalDailyItems : 0;
     const avgCostPercentage = totalDailyRevenue > 0 ? ((totalDailyCost + totalDailyPackagingCost) / totalDailyRevenue) * 100 : 0;
+    const profitMargin = totalDailyRevenue > 0 ? (totalDailyProfit / totalDailyRevenue) * 100 : 0;
 
     const handleAddTarget = () => {
         if (recipes.length === 0) return alert('Önce reçete eklemelisiniz!');
@@ -113,6 +119,24 @@ export function TargetsView() {
         setEditingPkgId(null);
     };
 
+    const confirmDelete = () => {
+        if (!deletingId || !deleteType) return;
+
+        if (deleteType === 'target') {
+            removeSalesTarget(deletingId);
+        } else if (deleteType === 'packaging') {
+            removePackagingCost(deletingId);
+        }
+
+        setDeletingId(null);
+        setDeleteType(null);
+    };
+
+    const cancelDelete = () => {
+        setDeletingId(null);
+        setDeleteType(null);
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header */}
@@ -127,9 +151,9 @@ export function TargetsView() {
                 {/* Left Col: Target List & Packaging */}
                 <div className="lg:col-span-2 space-y-8">
                     {/* Sales Targets Table */}
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-visible">
                         {/* Header with Add Button at top right of table area as requested */}
-                        <div className="flex justify-between items-center px-6 py-3 bg-zinc-900/80 border-b border-zinc-800">
+                        <div className="flex justify-between items-center px-6 py-3 bg-zinc-900/80 border-b border-zinc-800 rounded-t-xl">
                             <h3 className="font-bold text-zinc-300">Hedef Tablosu</h3>
                             <button
                                 onClick={handleAddTarget}
@@ -233,7 +257,10 @@ export function TargetsView() {
                                             </td>
                                             <td className="px-1 py-1 text-center">
                                                 <button
-                                                    onClick={() => removeSalesTarget(target.id)}
+                                                    onClick={() => {
+                                                        setDeletingId(target.id);
+                                                        setDeleteType('target');
+                                                    }}
                                                     className="text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                                                 >
                                                     <Trash2 size={16} />
@@ -282,7 +309,7 @@ export function TargetsView() {
                                                 value={editPkgAmount}
                                                 onChange={(e) => setEditPkgAmount(e.target.value)}
                                                 onFocus={(e) => e.target.select()}
-                                                className="w-20 bg-zinc-800 text-white text-right px-2 py-0.5 rounded border border-indigo-500/50 outline-none font-mono text-xs"
+                                                className="w-20 bg-zinc-800 text-white text-right px-2 py-0.5 rounded border border-indigo-500/50 outline-none font-mono text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                 onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
                                             />
                                             <button
@@ -308,7 +335,10 @@ export function TargetsView() {
                                                 <span className="font-mono text-orange-400 text-xs">-{formatCurrency(item.amount)}</span>
                                             </div>
                                             <button
-                                                onClick={() => removePackagingCost(item.id)}
+                                                onClick={() => {
+                                                    setDeletingId(item.id);
+                                                    setDeleteType('packaging');
+                                                }}
                                                 className="p-1 hover:bg-zinc-800 rounded text-zinc-600 hover:text-red-400 transition-colors"
                                                 title="Sil"
                                             >
@@ -338,7 +368,7 @@ export function TargetsView() {
                                         onChange={(e) => setNewPkgAmount(e.target.value)}
                                         placeholder="0.00"
                                         onFocus={(e) => e.target.select()}
-                                        className="w-full bg-transparent border-b border-zinc-700/50 focus:border-indigo-500 px-2 py-0.5 text-white placeholder-zinc-600 focus:outline-none transition-colors text-right text-xs font-mono"
+                                        className="w-full bg-transparent border-b border-zinc-700/50 focus:border-indigo-500 px-2 py-0.5 text-white placeholder-zinc-600 focus:outline-none transition-colors text-right text-xs font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                         onKeyDown={(e) => e.key === 'Enter' && handleAddPackaging()}
                                     />
                                     <span className="absolute right-0 top-0.5 text-zinc-500 text-[10px] pointer-events-none">₺</span>
@@ -364,6 +394,14 @@ export function TargetsView() {
 
                 {/* Right Col: Summary Card */}
                 <div className="space-y-6">
+                    {/* Tax Summary Module */}
+                    <TaxSummary
+                        title="TAHMİNİ AYLIK VERGİ YÜKÜ (SİMÜLASYON)"
+                        profit={totalDailyProfit * 30}
+                        revenue={totalDailyRevenue * 30}
+                        expensesVat={(totalDailyCost + totalDailyPackagingCost) * 30 * 0.08} // Estimated 8% VAT on expenses
+                    />
+
                     <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border border-indigo-500/20 rounded-2xl p-6 backdrop-blur-sm">
                         <h3 className="text-lg font-bold text-white mb-6">Tahmini Günlük Özet</h3>
 
@@ -391,24 +429,32 @@ export function TargetsView() {
                             </div>
                             <div className="w-full h-px bg-white/10 my-2"></div>
                             <div className="flex justify-between items-end">
-                                <span className="text-zinc-200 font-bold">Net Kâr</span>
+                                <span className="text-zinc-200 font-bold">Brüt Kâr</span>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-white font-mono">{formatCurrency(totalDailyProfit)}</div>
+                                    <div className="flex items-center justify-end gap-2">
+                                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${totalDailyProfit >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                            %{profitMargin.toFixed(1)}
+                                        </span>
+                                        <div className="text-2xl font-bold text-white font-mono">{formatCurrency(totalDailyProfit)}</div>
+                                    </div>
                                     <div className="text-xs text-indigo-300 mt-1">Maliyet: %{avgCostPercentage.toFixed(1)}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* Tax Summary Module */}
-                    <TaxSummary
-                        title="TAHMİNİ AYLIK VERGİ YÜKÜ (SİMÜLASYON)"
-                        profit={totalDailyProfit * 30}
-                        revenue={totalDailyRevenue * 30}
-                        expensesVat={(totalDailyCost + totalDailyPackagingCost) * 30 * 0.08} // Estimated 8% VAT on expenses
-                    />
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={!!deletingId}
+                title={deleteType === 'target' ? "Hedefi Sil" : "Ambalajı Sil"}
+                message={deleteType === 'target'
+                    ? "Bu satış hedefini silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+                    : "Bu ambalaj giderini silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+                }
+                onConfirm={confirmDelete}
+                onCancel={cancelDelete}
+            />
         </div>
     );
 }

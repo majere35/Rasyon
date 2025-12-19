@@ -6,7 +6,7 @@ import { CustomSelect } from '../components/CustomSelect';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { MonthlyBalanceTab } from '../components/MonthlyBalanceTab';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, History, Check } from 'lucide-react';
+import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, History, Check, X } from 'lucide-react';
 
 // Basic formatter
 const formatCurrency = (amount: number) => {
@@ -436,19 +436,25 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                                         <td className="p-2"><input type="date" value={editForm.date} onChange={e => setEditForm({ ...editForm, date: e.target.value })} className="w-full p-1 border rounded bg-transparent text-zinc-900 dark:text-zinc-100 dark:border-zinc-700 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert" /></td>
                                         <td className="p-2"><input type="text" value={editForm.supplier} onChange={e => setEditForm({ ...editForm, supplier: e.target.value })} className="w-full p-1 border rounded bg-transparent text-zinc-900 dark:text-zinc-100 dark:border-zinc-700" /></td>
                                         <td className="p-2">
-                                            <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })} className="w-full p-1 border rounded bg-transparent text-zinc-900 dark:text-zinc-100 dark:border-zinc-700">
-                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                            </select>
+                                            <CustomSelect
+                                                value={editForm.category || 'Diğer'}
+                                                onChange={v => setEditForm({ ...editForm, category: v })}
+                                                options={categories.map(c => ({ label: c, value: c }))}
+                                            />
                                         </td>
                                         <td className="p-2"><input type="text" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full p-1 border rounded bg-transparent text-zinc-900 dark:text-zinc-100 dark:border-zinc-700" /></td>
-                                        <td className="p-2"><input type="number" value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: e.target.valueAsNumber })} className="w-full p-1 border rounded text-right bg-transparent text-zinc-900 dark:text-zinc-100 dark:border-zinc-700" /></td>
+                                        <td className="p-2"><input type="number" value={editForm.amount} onChange={e => setEditForm({ ...editForm, amount: e.target.valueAsNumber })} className="w-full p-1 border rounded text-right bg-transparent text-zinc-900 dark:text-zinc-100 dark:border-zinc-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></td>
                                         <td className="p-2">
-                                            <select value={editForm.taxRate} onChange={e => setEditForm({ ...editForm, taxRate: Number(e.target.value) })} className="w-full p-1 border rounded bg-transparent text-zinc-900 dark:text-zinc-100 dark:border-zinc-700">
-                                                <option value={0}>%0</option>
-                                                <option value={1}>%1</option>
-                                                <option value={10}>%10</option>
-                                                <option value={20}>%20</option>
-                                            </select>
+                                            <CustomSelect
+                                                value={editForm.taxRate?.toString() || '20'}
+                                                onChange={v => setEditForm({ ...editForm, taxRate: Number(v) })}
+                                                options={[
+                                                    { label: '%0', value: '0' },
+                                                    { label: '%1', value: '1' },
+                                                    { label: '%10', value: '10' },
+                                                    { label: '%20', value: '20' }
+                                                ]}
+                                            />
                                         </td>
                                         <td className="p-2 flex items-center justify-end gap-1">
                                             <button onClick={saveEdit} className="p-1 text-green-600 hover:bg-green-100 rounded"><CheckCircle className="w-5 h-5" /></button>
@@ -530,8 +536,6 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
     const addSale = () => {
         if (!newSale.totalAmount) return alert('Toplam Tutar 0 olamaz.');
 
-        // Check if date already exists? Maybe warn or allow multiple entries? Allowing multiple for now.
-
         const sale: DailySale = {
             id: Date.now().toString(),
             date: newSale.date || new Date().toISOString().slice(0, 10),
@@ -542,17 +546,15 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
             trendyol: Number(newSale.trendyol) || 0,
             getirYemek: Number(newSale.getirYemek) || 0,
             migrosYemek: Number(newSale.migrosYemek) || 0,
-            online: 0, // Legacy support, handled via specific fields
+            online: 0,
             totalAmount: newSale.totalAmount || 0,
             note: newSale.note || ''
         };
 
         const updatedSales = [...data.dailySales, sale];
-        // Sort by date
         updatedSales.sort((a, b) => a.date.localeCompare(b.date));
 
         onChange({ ...data, dailySales: updatedSales });
-        // Reset form
         setNewSale({ ...newSale, cash: 0, creditCard: 0, mealCard: 0, yemeksepeti: 0, trendyol: 0, getirYemek: 0, migrosYemek: 0, totalAmount: 0 });
     };
 
@@ -583,11 +585,40 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
         });
     };
 
+    // Inline Editing State
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState<Partial<DailySale>>({});
+
+    const startEdit = (sale: DailySale) => {
+        setEditingId(sale.id);
+        setEditForm({ ...sale });
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setEditForm({});
+    };
+
+    const saveEdit = () => {
+        if (!editingId) return;
+
+        const updatedSales = data.dailySales.map(s => {
+            if (s.id === editingId) {
+                const total = (Number(editForm.cash) || 0) + (Number(editForm.creditCard) || 0) + (Number(editForm.mealCard) || 0) + (Number(editForm.yemeksepeti) || 0) + (Number(editForm.trendyol) || 0) + (Number(editForm.getirYemek) || 0) + (Number(editForm.migrosYemek) || 0);
+                return { ...s, ...editForm, totalAmount: total } as DailySale;
+            }
+            return s;
+        });
+
+        onChange({ ...data, dailySales: updatedSales });
+        setEditingId(null);
+        setEditForm({});
+    };
+
     return (
         <div className="space-y-6">
             {!isReadOnly && (
                 <div className="bg-white dark:bg-[#18181b] p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                    {/* ... form inputs ... */}
                     <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Günlük Satış Ekle</h3>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div className="col-span-2 lg:col-span-1">
@@ -595,36 +626,34 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
                             <input type="date" value={newSale.date} onChange={e => setNewSale({ ...newSale, date: e.target.value })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert" />
                         </div>
 
-                        {/* Offline Channels */}
                         <div>
                             <label className="text-xs text-zinc-500 mb-1 block">Nakit</label>
-                            <input type="number" placeholder="0.00" value={newSale.cash || ''} onChange={e => setNewSale({ ...newSale, cash: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm" />
+                            <input type="number" placeholder="0.00" value={newSale.cash || ''} onChange={e => setNewSale({ ...newSale, cash: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                         </div>
                         <div>
                             <label className="text-xs text-zinc-500 mb-1 block">Kredi Kartı</label>
-                            <input type="number" placeholder="0.00" value={newSale.creditCard || ''} onChange={e => setNewSale({ ...newSale, creditCard: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm" />
+                            <input type="number" placeholder="0.00" value={newSale.creditCard || ''} onChange={e => setNewSale({ ...newSale, creditCard: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                         </div>
                         <div>
                             <label className="text-xs text-zinc-500 mb-1 block">Yemek Kartı (Sodexo/Multinet)</label>
-                            <input type="number" placeholder="0.00" value={newSale.mealCard || ''} onChange={e => setNewSale({ ...newSale, mealCard: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm" />
+                            <input type="number" placeholder="0.00" value={newSale.mealCard || ''} onChange={e => setNewSale({ ...newSale, mealCard: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                         </div>
 
-                        {/* Online Channels */}
                         <div>
                             <label className="text-xs text-orange-600 mb-1 block">Trendyol Yemek</label>
-                            <input type="number" placeholder="0.00" value={newSale.trendyol || ''} onChange={e => setNewSale({ ...newSale, trendyol: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm border-orange-200 dark:border-orange-900/50" />
+                            <input type="number" placeholder="0.00" value={newSale.trendyol || ''} onChange={e => setNewSale({ ...newSale, trendyol: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm border-orange-200 dark:border-orange-900/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                         </div>
                         <div>
                             <label className="text-xs text-red-600 mb-1 block">Yemeksepeti</label>
-                            <input type="number" placeholder="0.00" value={newSale.yemeksepeti || ''} onChange={e => setNewSale({ ...newSale, yemeksepeti: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm border-red-200 dark:border-red-900/50" />
+                            <input type="number" placeholder="0.00" value={newSale.yemeksepeti || ''} onChange={e => setNewSale({ ...newSale, yemeksepeti: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm border-red-200 dark:border-red-900/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                         </div>
                         <div>
                             <label className="text-xs text-purple-600 mb-1 block">GetirYemek</label>
-                            <input type="number" placeholder="0.00" value={newSale.getirYemek || ''} onChange={e => setNewSale({ ...newSale, getirYemek: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm border-purple-200 dark:border-purple-900/50" />
+                            <input type="number" placeholder="0.00" value={newSale.getirYemek || ''} onChange={e => setNewSale({ ...newSale, getirYemek: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm border-purple-200 dark:border-purple-900/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                         </div>
                         <div>
                             <label className="text-xs text-orange-500 mb-1 block">MigrosYemek</label>
-                            <input type="number" placeholder="0.00" value={newSale.migrosYemek || ''} onChange={e => setNewSale({ ...newSale, migrosYemek: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm border-orange-200 dark:border-orange-900/50" />
+                            <input type="number" placeholder="0.00" value={newSale.migrosYemek || ''} onChange={e => setNewSale({ ...newSale, migrosYemek: e.target.valueAsNumber })} className="w-full p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm border-orange-200 dark:border-orange-900/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                         </div>
 
                         <div className="col-span-2 lg:col-span-4 mt-2">
@@ -640,7 +669,6 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
 
             <div className="bg-white dark:bg-[#18181b] rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden overflow-x-auto">
                 <table className="w-full text-sm text-left whitespace-nowrap">
-                    {/* ... table content ... */}
                     <thead className="bg-zinc-50 dark:bg-zinc-900 text-zinc-500 font-medium">
                         <tr>
                             <th className="p-3">Tarih</th>
@@ -661,19 +689,46 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
                         )}
                         {data.dailySales.map((sale) => (
                             <tr key={sale.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
-                                <td className="p-3">{formatDateTR(sale.date)}</td>
-                                <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.cash)}</td>
-                                <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.creditCard)}</td>
-                                <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.mealCard)}</td>
-                                <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.trendyol || 0)}</td>
-                                <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.yemeksepeti || 0)}</td>
-                                <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.getirYemek || 0)}</td>
-                                <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.migrosYemek || 0)}</td>
-                                <td className="p-3 text-right font-bold text-green-600 dark:text-green-400 bg-zinc-50 dark:bg-zinc-800/20">{formatCurrency(sale.totalAmount)}</td>
-                                {!isReadOnly && (
-                                    <td className="p-3 text-right">
-                                        <button onClick={() => removeSale(sale.id)} className="text-red-500 hover:text-red-700 text-xs ml-2">Sil</button>
-                                    </td>
+                                {editingId === sale.id ? (
+                                    <>
+                                        <td className="p-2"><input type="date" value={editForm.date} onChange={e => setEditForm({ ...editForm, date: e.target.value })} className="w-full bg-zinc-800 text-white px-2 py-1 rounded text-xs" /></td>
+                                        <td className="p-2"><input type="number" value={editForm.cash} onChange={e => setEditForm({ ...editForm, cash: e.target.valueAsNumber })} className="w-full bg-zinc-800 text-white text-right px-2 py-1 rounded text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></td>
+                                        <td className="p-2"><input type="number" value={editForm.creditCard} onChange={e => setEditForm({ ...editForm, creditCard: e.target.valueAsNumber })} className="w-full bg-zinc-800 text-white text-right px-2 py-1 rounded text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></td>
+                                        <td className="p-2"><input type="number" value={editForm.mealCard} onChange={e => setEditForm({ ...editForm, mealCard: e.target.valueAsNumber })} className="w-full bg-zinc-800 text-white text-right px-2 py-1 rounded text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></td>
+                                        <td className="p-2"><input type="number" value={editForm.trendyol} onChange={e => setEditForm({ ...editForm, trendyol: e.target.valueAsNumber })} className="w-full bg-zinc-800 text-white text-right px-2 py-1 rounded text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></td>
+                                        <td className="p-2"><input type="number" value={editForm.yemeksepeti} onChange={e => setEditForm({ ...editForm, yemeksepeti: e.target.valueAsNumber })} className="w-full bg-zinc-800 text-white text-right px-2 py-1 rounded text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></td>
+                                        <td className="p-2"><input type="number" value={editForm.getirYemek} onChange={e => setEditForm({ ...editForm, getirYemek: e.target.valueAsNumber })} className="w-full bg-zinc-800 text-white text-right px-2 py-1 rounded text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></td>
+                                        <td className="p-2"><input type="number" value={editForm.migrosYemek} onChange={e => setEditForm({ ...editForm, migrosYemek: e.target.valueAsNumber })} className="w-full bg-zinc-800 text-white text-right px-2 py-1 rounded text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" /></td>
+                                        <td className="p-2 text-right font-bold text-white">
+                                            {((editForm.cash || 0) + (editForm.creditCard || 0) + (editForm.mealCard || 0) + (editForm.yemeksepeti || 0) + (editForm.trendyol || 0) + (editForm.getirYemek || 0) + (editForm.migrosYemek || 0)).toFixed(2)}
+                                        </td>
+                                        <td className="p-2 flex items-center justify-end gap-1">
+                                            <button onClick={saveEdit} className="p-1 text-green-400 hover:bg-green-400/10 rounded"><Check size={16} /></button>
+                                            <button onClick={cancelEdit} className="p-1 text-zinc-400 hover:bg-zinc-700 rounded"><X size={16} /></button>
+                                        </td>
+                                    </>
+                                ) : (
+                                    <>
+                                        <td className="p-3">{formatDateTR(sale.date)}</td>
+                                        <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.cash)}</td>
+                                        <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.creditCard)}</td>
+                                        <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.mealCard)}</td>
+                                        <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.trendyol || 0)}</td>
+                                        <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.yemeksepeti || 0)}</td>
+                                        <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.getirYemek || 0)}</td>
+                                        <td className="p-3 text-right text-zinc-600 dark:text-zinc-400">{formatCurrency(sale.migrosYemek || 0)}</td>
+                                        <td className="p-3 text-right font-bold text-green-600 dark:text-green-400 bg-zinc-50 dark:bg-zinc-800/20">{formatCurrency(sale.totalAmount)}</td>
+                                        {!isReadOnly && (
+                                            <td className="p-3 text-right whitespace-nowrap">
+                                                <button onClick={() => startEdit(sale)} className="text-zinc-400 hover:text-indigo-600 mr-2 transition-colors" title="Düzenle">
+                                                    <Pencil className="w-4 h-4 inline" />
+                                                </button>
+                                                <button onClick={() => removeSale(sale.id)} className="text-zinc-400 hover:text-red-600 transition-colors" title="Sil">
+                                                    <Trash2 className="w-4 h-4 inline" />
+                                                </button>
+                                            </td>
+                                        )}
+                                    </>
                                 )}
                             </tr>
                         ))}

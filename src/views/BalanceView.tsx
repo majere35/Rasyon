@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
 import { NumberInput } from '../components/NumberInput';
 import { TaxSummary } from '../components/TaxSummary';
+import { ConfirmModal } from '../components/ConfirmModal';
 import type { Expense } from '../types';
 
 const EXPENSE_GROUPS = [
@@ -64,6 +65,30 @@ export function BalanceView() {
     const [editField, setEditField] = useState<'name' | 'amount' | 'autoValue' | null>(null);
     const [tempValue, setTempValue] = useState('');
     const [openVatDropdownId, setOpenVatDropdownId] = useState<string | null>(null);
+
+    // Confirm Modal State
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        type: 'danger' as 'danger' | 'warning'
+    });
+
+    const closeConfirm = () => setConfirmModal(prev => ({ ...prev, isOpen: false }));
+
+    const handleDeleteClick = (id: string) => {
+        setConfirmModal({
+            isOpen: true,
+            title: 'Gideri Sil',
+            message: 'Bu gider kalemini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.',
+            type: 'danger',
+            onConfirm: () => {
+                removeExpense(id);
+                closeConfirm();
+            }
+        });
+    };
 
     // --- Core Calculations ---
     const totalDailyRevenue = salesTargets.reduce((sum, target) => {
@@ -310,7 +335,7 @@ export function BalanceView() {
                         const groupRevenueShare = monthlyRevenue > 0 ? (groupTotal / monthlyRevenue) * 100 : 0;
 
                         return (
-                            <div key={group.id} className={`bg-zinc-900/40 border ${group.borderColor} rounded-xl overflow-hidden`}>
+                            <div key={group.id} className={`bg-zinc-900/40 border ${group.borderColor} rounded-xl overflow-visible`}>
                                 {/* Group Header */}
                                 <div className={`px-3 py-1.5 border-b ${group.borderColor} flex justify-between items-center bg-gradient-to-r ${group.bgGradient}`}>
                                     <h3 className={`font-bold ${group.color} text-sm flex items-center gap-2`}>
@@ -348,7 +373,7 @@ export function BalanceView() {
                                                                     autoFocus
                                                                     type="number"
                                                                     step="0.1"
-                                                                    className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-center font-bold text-white text-xs"
+                                                                    className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-center font-bold text-white text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                                     value={tempValue}
                                                                     onChange={e => setTempValue(e.target.value)}
                                                                     onBlur={() => saveEdit(expense)}
@@ -377,7 +402,7 @@ export function BalanceView() {
                                                                     autoFocus
                                                                     type="number"
                                                                     step="1"
-                                                                    className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-center font-bold text-white text-xs"
+                                                                    className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-center font-bold text-white text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                                     value={tempValue}
                                                                     onChange={e => setTempValue(e.target.value)}
                                                                     onBlur={() => saveEdit(expense)}
@@ -399,7 +424,7 @@ export function BalanceView() {
                                                                 <input
                                                                     autoFocus
                                                                     type="number"
-                                                                    className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-right font-mono text-xs"
+                                                                    className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-right font-mono text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                                     value={tempValue}
                                                                     onChange={e => setTempValue(e.target.value)}
                                                                     onBlur={() => saveEdit(expense)}
@@ -501,7 +526,7 @@ export function BalanceView() {
                                                                     className="fixed inset-0 z-10"
                                                                     onClick={() => setOpenVatDropdownId(null)}
                                                                 />
-                                                                <div className="absolute top-full right-0 mt-1 w-20 bg-zinc-900 border border-zinc-700 rounded shadow-xl z-20 overflow-hidden">
+                                                                <div className="absolute top-full right-0 mt-1 w-20 bg-zinc-950 border border-zinc-800 rounded shadow-xl z-50 overflow-hidden">
                                                                     {[0, 0.01, 0.10, 0.20].map((rate) => (
                                                                         <div
                                                                             key={rate}
@@ -527,7 +552,7 @@ export function BalanceView() {
                                                             <input
                                                                 autoFocus
                                                                 type="number"
-                                                                className="w-24 bg-zinc-800 text-white text-right px-2 py-0.5 rounded border border-indigo-500 outline-none font-mono text-sm"
+                                                                className="w-24 bg-zinc-800 text-white text-right px-2 py-0.5 rounded border border-indigo-500 outline-none font-mono text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                                 value={tempValue}
                                                                 onChange={e => setTempValue(e.target.value)}
                                                                 onBlur={() => saveEdit(expense)}
@@ -549,7 +574,7 @@ export function BalanceView() {
                                                     <div className="w-6 flex justify-end">
                                                         {!expense.isAutomated && (
                                                             <button
-                                                                onClick={() => removeExpense(expense.id)}
+                                                                onClick={() => handleDeleteClick(expense.id)}
                                                                 className="text-zinc-700 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
                                                             >
                                                                 <Trash2 size={14} />
@@ -576,7 +601,7 @@ export function BalanceView() {
                                             <input
                                                 type="number"
                                                 placeholder="0.00"
-                                                className="w-24 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded text-white text-right font-mono focus:border-indigo-500 outline-none"
+                                                className="w-24 bg-zinc-900 border border-zinc-700 px-2 py-1 rounded text-white text-right font-mono focus:border-indigo-500 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                                 value={newAmount}
                                                 onChange={e => setNewAmount(e.target.value)}
                                                 onKeyDown={e => e.key === 'Enter' && handleAdd(group.id)}
@@ -602,6 +627,14 @@ export function BalanceView() {
                 <div className="xl:col-span-4 space-y-6">
 
                     {/* Tax Module Removed - Moved to MonthlyBalanceTab */}
+
+                    {/* Tax Summary Module */}
+                    <TaxSummary
+                        profit={netProfit}
+                        revenue={monthlyRevenue}
+                        expensesVat={totalExpensesVat}
+                        stopaj={totalStopaj}
+                    />
 
                     {/* Main Profit Card (Moved Down & Expanded) */}
                     <div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
@@ -646,9 +679,14 @@ export function BalanceView() {
                             <div className="space-y-1 text-sm border-t border-zinc-800/50 pt-3">
                                 <div className="flex justify-between">
                                     <span className="text-zinc-500">Net Kâr (Vergi Öncesi)</span>
-                                    <span className={`font-mono font-bold ${netProfit >= 0 ? 'text-white' : 'text-red-500'}`}>
-                                        {formatCurrency(netProfit)}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${netProfit >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                            %{monthlyRevenue > 0 ? ((netProfit / monthlyRevenue) * 100).toFixed(1) : '0.0'}
+                                        </span>
+                                        <span className={`font-mono font-bold ${netProfit >= 0 ? 'text-white' : 'text-red-500'}`}>
+                                            {formatCurrency(netProfit)}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="flex justify-between text-xs font-bold text-red-400 border-t border-zinc-800/50 pt-2 mt-2">
                                     <span className="">Ödenecek Toplam Vergi</span>
@@ -659,8 +697,13 @@ export function BalanceView() {
                             <div className="pt-4 mt-4 border-t border-zinc-700/50">
                                 <div className="flex flex-col gap-1 items-end">
                                     <span className="text-sm font-bold text-zinc-400">Vergi Sonrası Net Kâr</span>
-                                    <div className={`text-3xl font-bold font-mono ${trueNetCash >= 0 ? 'text-indigo-400' : 'text-red-500'}`}>
-                                        {formatCurrency(trueNetCash)}
+                                    <div className="flex items-center gap-2">
+                                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${trueNetCash >= 0 ? 'bg-indigo-500/10 text-indigo-400' : 'bg-red-500/10 text-red-400'}`}>
+                                            %{monthlyRevenue > 0 ? ((trueNetCash / monthlyRevenue) * 100).toFixed(1) : '0.0'}
+                                        </span>
+                                        <div className={`text-3xl font-bold font-mono ${trueNetCash >= 0 ? 'text-indigo-400' : 'text-red-500'}`}>
+                                            {formatCurrency(trueNetCash)}
+                                        </div>
                                     </div>
                                     <span className="text-[10px] text-zinc-500">Vergiler ve KDV ödendikten sonra kalan</span>
                                 </div>
@@ -668,16 +711,17 @@ export function BalanceView() {
                         </div>
                     </div>
 
-                    {/* Tax Summary Module */}
-                    <TaxSummary
-                        profit={netProfit}
-                        revenue={monthlyRevenue}
-                        expensesVat={totalExpensesVat}
-                        stopaj={totalStopaj}
-                    />
-
                 </div>
-            </div >
+            </div>
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={closeConfirm}
+                type={confirmModal.type}
+            />
         </div >
     );
 }

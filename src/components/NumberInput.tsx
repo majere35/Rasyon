@@ -1,4 +1,3 @@
-import { ChevronUp, ChevronDown } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
 
 interface NumberInputProps {
@@ -51,32 +50,6 @@ export function NumberInput({ value, onChange, min = 0, max, step = 1, className
         };
     }, []);
 
-    const handleIncrement = () => {
-        const currentVal = parseFloat(localValue.replace(',', '.')) || 0;
-        const newValue = currentVal + step;
-        if (max !== undefined && newValue > max) return;
-
-        const stepPrecision = step.toString().split('.')[1]?.length || 0;
-        const precision = Math.max(stepPrecision, 2);
-
-        const nextVal = Number(newValue.toFixed(precision));
-        onChange(nextVal);
-        setLocalValue(nextVal.toString());
-    };
-
-    const handleDecrement = () => {
-        const currentVal = parseFloat(localValue.replace(',', '.')) || 0;
-        const newValue = currentVal - step;
-        if (min !== undefined && newValue < min) return;
-
-        const stepPrecision = step.toString().split('.')[1]?.length || 0;
-        const precision = Math.max(stepPrecision, 2);
-
-        const nextVal = Number(newValue.toFixed(precision));
-        onChange(nextVal);
-        setLocalValue(nextVal.toString());
-    };
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let val = e.target.value;
 
@@ -110,10 +83,33 @@ export function NumberInput({ value, onChange, min = 0, max, step = 1, className
     };
 
     const handleBlur = () => {
-        // On blur, format properly? Or keep as is?
-        // Maybe just ensure it matches the prop value to ensure consistency
-        if (value !== undefined && value !== null) {
-            setLocalValue(value.toString());
+        // Enforce min/max on blur
+        let currentVal = parseFloat(localValue.replace(',', '.'));
+        if (!isNaN(currentVal)) {
+            if (min !== undefined && currentVal < min) currentVal = min;
+            if (max !== undefined && currentVal > max) currentVal = max;
+
+            // Round to step precision if step is provided
+            if (step !== undefined) {
+                const stepPrecision = step.toString().split('.')[1]?.length || 0;
+                const precision = Math.max(stepPrecision, 2);
+                currentVal = Number(currentVal.toFixed(precision));
+            }
+
+            // Update if changed
+            if (currentVal !== parseFloat(localValue.replace(',', '.'))) {
+                onChange(currentVal);
+                setLocalValue(currentVal.toString());
+            } else {
+                // Ensure format consistency
+                if (value !== undefined && value !== null) {
+                    setLocalValue(value.toString());
+                }
+            }
+        } else {
+            if (value !== undefined && value !== null) {
+                setLocalValue(value.toString());
+            }
         }
     };
 
@@ -136,25 +132,6 @@ export function NumberInput({ value, onChange, min = 0, max, step = 1, className
                     {description}
                 </span>
             )}
-
-            <div className="flex flex-col border-l border-zinc-700/50">
-                <button
-                    type="button"
-                    onClick={handleIncrement}
-                    className="px-1 h-[50%] hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors flex items-center justify-center rounded-tr-lg active:scale-95"
-                    tabIndex={-1}
-                >
-                    <ChevronUp size={10} />
-                </button>
-                <button
-                    type="button"
-                    onClick={handleDecrement}
-                    className="px-1 h-[50%] hover:bg-zinc-700 text-zinc-500 hover:text-zinc-200 transition-colors flex items-center justify-center rounded-br-lg border-t border-zinc-700/30 active:scale-95"
-                    tabIndex={-1}
-                >
-                    <ChevronDown size={10} />
-                </button>
-            </div>
         </div>
     );
 }

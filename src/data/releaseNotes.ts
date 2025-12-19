@@ -6,6 +6,26 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: '1.2.2',
+        date: '20 Aralık 2025',
+        changes: [
+            'Projeksiyon Sihirbazı (BalanceView): Gider silme işlemi için onay penceresi eklendi.',
+            'Gerçekleşen Hesaplar (MonthlyAccountingView): KDV seçim menüsünün arka plan rengi düzeltildi.',
+            'Finansal Özet: Projeksiyon ve Aylık Bilanço ekranlarına kâr marjı (%) ve vergi sonrası net kâr (%) göstergeleri eklendi.',
+            'UI İyileştirmeleri: Sayı giriş alanlarındaki ok işaretleri kaldırıldı, genel görünüm iyileştirildi.'
+        ]
+    },
+    {
+        version: '1.2.1',
+        date: '17.12.2025',
+        changes: [
+            'Gerçekleşen Hesaplar Modülü: Yeni sekme yapısı (Gider -> Gelir -> Bilanço).',
+            'Otomatik Kayıt Sistemi: Artık manuel kaydetmeye gerek yok.',
+            'UI İyileştirmeleri: Modern onay pencereleri ve optimize edilmiş formlar.',
+            'Bilanço: 15 standart kategori ve online komisyon hesaplaması.'
+        ]
+    },
+    {
         version: 'v1.2.0',
         date: '17.12.2025',
         changes: [

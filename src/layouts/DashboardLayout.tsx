@@ -11,7 +11,16 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-    const [activeTab, setActiveTab] = useState<ActiveTab>('recipes');
+    const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
+        const saved = localStorage.getItem('activeTab');
+        return (saved as ActiveTab) || 'recipes';
+    });
+
+    const handleTabChange = (tab: ActiveTab) => {
+        setActiveTab(tab);
+        localStorage.setItem('activeTab', tab);
+    };
+
     const { toggleConfig } = useStore();
 
     return (
@@ -19,7 +28,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Desktop Sidebar - Hidden on Mobile */}
             <div className="hidden md:block">
-                <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+                <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
             </div>
 
             {/* Mobile Header */}
@@ -42,7 +51,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </main>
 
             {/* Mobile Navigation - Hidden on Desktop */}
-            <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
+            <MobileNav activeTab={activeTab} onTabChange={handleTabChange} />
         </div>
     );
 }

@@ -273,6 +273,14 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
             {/* RIGHT: Financial Summary (4 Cols) */}
             <div className="xl:col-span-4 space-y-6">
 
+                {/* Tax Summary Module */}
+                <TaxSummary
+                    profit={netProfit}
+                    revenue={aggregatedData.totalRevenue}
+                    expensesVat={aggregatedData.totalDeductibleVat}
+                    stopaj={aggregatedData.totalStopajTax}
+                />
+
                 <div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-[50px] rounded-full pointer-events-none"></div>
 
@@ -314,9 +322,14 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
                             {/* Net Profit Pre-Tax */}
                             <div className="flex justify-between mb-2">
                                 <span className="text-zinc-500">Net Kâr (Vergi Öncesi)</span>
-                                <span className={`font-mono font-bold ${netProfit >= 0 ? 'text-white' : 'text-red-500'}`}>
-                                    {formatCurrency(netProfit)}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${netProfit >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                        %{aggregatedData.totalRevenue > 0 ? ((netProfit / aggregatedData.totalRevenue) * 100).toFixed(1) : '0.0'}
+                                    </span>
+                                    <span className={`font-mono font-bold ${netProfit >= 0 ? 'text-white' : 'text-red-500'}`}>
+                                        {formatCurrency(netProfit)}
+                                    </span>
+                                </div>
                             </div>
 
                             {/* Taxes */}
@@ -330,22 +343,19 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
                             {/* Net Profit After Tax */}
                             <div className="mt-6 flex flex-col items-end">
                                 <span className="text-sm font-bold text-zinc-400">Vergi Sonrası Net Kâr</span>
-                                <div className={`text-3xl font-bold font-mono ${netProfitAfterTax >= 0 ? 'text-indigo-400' : 'text-red-500'}`}>
-                                    {formatCurrency(netProfitAfterTax)}
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${netProfitAfterTax >= 0 ? 'bg-indigo-500/10 text-indigo-400' : 'bg-red-500/10 text-red-400'}`}>
+                                        %{aggregatedData.totalRevenue > 0 ? ((netProfitAfterTax / aggregatedData.totalRevenue) * 100).toFixed(1) : '0.0'}
+                                    </span>
+                                    <div className={`text-3xl font-bold font-mono ${netProfitAfterTax >= 0 ? 'text-indigo-400' : 'text-red-500'}`}>
+                                        {formatCurrency(netProfitAfterTax)}
+                                    </div>
                                 </div>
                                 <span className="text-[10px] text-zinc-500">Vergiler ve KDV ödendikten sonra kalan</span>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                {/* Tax Summary Module */}
-                <TaxSummary
-                    profit={netProfit}
-                    revenue={aggregatedData.totalRevenue}
-                    expensesVat={aggregatedData.totalDeductibleVat}
-                    stopaj={aggregatedData.totalStopajTax}
-                />
             </div>
         </div>
     );

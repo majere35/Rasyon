@@ -7,7 +7,7 @@ export function formatCurrency(amount: number): string {
             style: 'currency',
             currency: 'TRY',
             minimumFractionDigits: 2,
-            maximumFractionDigits: 4
+            maximumFractionDigits: 2
         }).format(amount);
     } catch (error) {
         console.error("Format currency error:", error);
