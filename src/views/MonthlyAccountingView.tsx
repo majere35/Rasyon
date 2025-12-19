@@ -273,7 +273,7 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<Partial<Invoice>>({});
 
-    const categories = ["Gıda", "Ambalaj", "Enerji", "Vergi/Stopaj", "Personel", "Kira", "Bakım/Onarım", "Diğer"];
+    const categories = ["Gıda", "Ambalaj", "Enerji", "Vergi/Stopaj", "Personel", "Kira", "Bakım/Onarım", "Kurye", "Diğer"];
 
     const addInvoice = () => {
         if (!newInvoice.supplier || !newInvoice.amount) return alert('Tedarikçi ve Tutar zorunludur.');
@@ -287,7 +287,8 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
             amount: Number(newInvoice.amount),
             taxRate: Number(newInvoice.taxRate),
             status: newInvoice.status as 'paid' | 'pending' || 'paid',
-            paymentDate: newInvoice.paymentDate
+            paymentDate: newInvoice.paymentDate,
+            taxMethod: newInvoice.category === 'Kira' ? (newInvoice.taxMethod || 'stopaj') : undefined
         };
 
         const updatedInvoices = [...data.invoices, invoice];
@@ -341,7 +342,8 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                     ...inv,
                     ...editForm,
                     amount: Number(editForm.amount),
-                    taxRate: Number(editForm.taxRate)
+                    taxRate: Number(editForm.taxRate),
+                    taxMethod: editForm.category === 'Kira' ? (editForm.taxMethod || 'stopaj') : undefined
                 } as Invoice;
             }
             return inv;
@@ -378,6 +380,20 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                             />
                         </div>
                         <input type="number" placeholder="Tutar" value={newInvoice.amount || ''} onChange={e => setNewInvoice({ ...newInvoice, amount: e.target.valueAsNumber })} className="p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm lg:w-[100px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+
+                        {/* Rent Specific: Tax Method Selector */}
+                        {newInvoice.category === 'Kira' && (
+                            <div className="min-w-[100px] lg:w-[100px]">
+                                <CustomSelect
+                                    value={newInvoice.taxMethod || 'stopaj'}
+                                    onChange={v => setNewInvoice({ ...newInvoice, taxMethod: v as any })}
+                                    options={[
+                                        { label: 'Stopaj', value: 'stopaj' },
+                                        { label: 'KDV', value: 'kdv' }
+                                    ]}
+                                />
+                            </div>
+                        )}
                         <div className="min-w-[110px] lg:w-[110px]">
                             <CustomSelect
                                 value={newInvoice.taxRate?.toString() || '20'}
@@ -446,7 +462,13 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                                         <td className="p-3 text-xs text-zinc-500 opacity-70">{inv.category}</td>
                                         <td className="p-3 text-zinc-500 truncate max-w-[200px]">{inv.description}</td>
                                         <td className="p-3 text-right font-medium text-red-600 dark:text-red-400">{formatCurrency(inv.amount)}</td>
-                                        <td className="p-3 text-right text-zinc-500">%{inv.taxRate}</td>
+                                        <td className="p-3 text-right text-zinc-500">
+                                            {inv.category === 'Kira' && inv.taxMethod === 'stopaj' ? (
+                                                <span className="text-orange-500 font-bold text-xs bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded">STOPAJ</span>
+                                            ) : (
+                                                <>%{inv.taxRate}</>
+                                            )}
+                                        </td>
                                         {!isReadOnly && (
                                             <td className="p-3 text-right whitespace-nowrap">
                                                 <button onClick={() => startEdit(inv)} className="text-zinc-400 hover:text-indigo-600 mr-2 transition-colors" title="Düzenle">

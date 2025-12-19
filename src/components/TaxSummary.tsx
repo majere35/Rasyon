@@ -1,7 +1,15 @@
 import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
 
-export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, revenue: number, expensesVat: number }) {
+interface TaxSummaryProps {
+    profit: number;
+    revenue: number;
+    expensesVat: number;
+    stopaj?: number;
+    title?: string;
+}
+
+export function TaxSummary({ profit, revenue, expensesVat, stopaj = 0, title }: TaxSummaryProps) {
     const { company } = useStore();
 
     // 2025 Turkish Tax Brackets for Sole Proprietorship (Şahıs)
@@ -35,8 +43,8 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
     const monthlyTax = annualTax / 12;
 
     // VAT (KDV)
-    const incomeVat = revenue * 0.10; // 10% on Revenue
-    // expenseVat is passed in (calculated row by row)
+    const incomeVat = revenue * 0.10; // 10% on Revenue (Food Service Standard)
+    // expenseVat is passed in
     const vatDiff = incomeVat - expensesVat;
 
     return (
@@ -44,11 +52,11 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
             {/* Income Tax Section */}
             <div>
                 <h3 className="text-zinc-400 text-[10px] font-bold uppercase tracking-wider mb-2 border-b border-zinc-800 pb-1">
-                    {company?.type === 'limited' ? 'KURUMLAR VERGİSİ (%25)' : 'GELİR VERGİSİ HESAPLAMA'}
+                    {title || (company?.type === 'limited' ? 'KURUMLAR VERGİSİ (%25)' : 'GELİR VERGİSİ HESAPLAMA')}
                 </h3>
                 <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
-                        <span className="text-zinc-500">Aylık Kâr</span>
+                        <span className="text-zinc-500">Aylık Kâr (Tahmini)</span>
                         <span className="text-white font-mono">{formatCurrency(monthlyProfit)}</span>
                     </div>
                     <div className="flex justify-between">
@@ -64,6 +72,12 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
                         <span>Aylık Ort. Vergi</span>
                         <span className="font-mono">-{formatCurrency(monthlyTax)}</span>
                     </div>
+                    {stopaj > 0 && (
+                        <div className="flex justify-between text-orange-400 font-bold">
+                            <span>Ödenecek Stopaj</span>
+                            <span className="font-mono">-{formatCurrency(stopaj)}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -93,3 +107,4 @@ export function TaxSummary({ profit, revenue, expensesVat }: { profit: number, r
         </div>
     );
 }
+

@@ -3,6 +3,7 @@ import { Plus, Trash2, Package, Save, X } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { CustomSelect } from '../components/CustomSelect';
 import { NumberInput } from '../components/NumberInput';
+import { TaxSummary } from '../components/TaxSummary';
 import { formatCurrency } from '../lib/utils';
 import type { SalesTarget, Expense } from '../types';
 
@@ -363,7 +364,7 @@ export function TargetsView() {
 
                 {/* Right Col: Summary Card */}
                 <div className="space-y-6">
-                    <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border border-indigo-500/20 rounded-2xl p-6 backdrop-blur-sm sticky top-6">
+                    <div className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border border-indigo-500/20 rounded-2xl p-6 backdrop-blur-sm">
                         <h3 className="text-lg font-bold text-white mb-6">Tahmini Günlük Özet</h3>
 
                         <div className="space-y-4">
@@ -398,6 +399,14 @@ export function TargetsView() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Tax Summary Module */}
+                    <TaxSummary
+                        title="TAHMİNİ AYLIK VERGİ YÜKÜ (SİMÜLASYON)"
+                        profit={totalDailyProfit * 30}
+                        revenue={totalDailyRevenue * 30}
+                        expensesVat={(totalDailyCost + totalDailyPackagingCost) * 30 * 0.08} // Estimated 8% VAT on expenses
+                    />
                 </div>
             </div>
         </div>

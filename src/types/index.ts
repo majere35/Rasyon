@@ -125,6 +125,7 @@ export interface Invoice {
     taxRate: number; // 0, 1, 10, 20 etc.
     status: 'paid' | 'pending';
     paymentDate?: string;
+    taxMethod?: 'kdv' | 'stopaj'; // For Rent: 'kdv' (20% VAT) or 'stopaj' (20% Withholding on Gross)
 }
 
 export interface DailySale {

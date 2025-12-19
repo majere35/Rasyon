@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Trash2, TrendingUp, Calendar, Plus, X, Building2, Factory, Truck, Users, PenLine } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
-import { TaxSummary } from '../components/TaxSummary';
 import { NumberInput } from '../components/NumberInput';
+import { TaxSummary } from '../components/TaxSummary';
 import type { Expense } from '../types';
 
 const EXPENSE_GROUPS = [
@@ -63,6 +63,7 @@ export function BalanceView() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editField, setEditField] = useState<'name' | 'amount' | 'autoValue' | null>(null);
     const [tempValue, setTempValue] = useState('');
+    const [openVatDropdownId, setOpenVatDropdownId] = useState<string | null>(null);
 
     // --- Core Calculations ---
     const totalDailyRevenue = salesTargets.reduce((sum, target) => {
@@ -102,7 +103,8 @@ export function BalanceView() {
             // If Stopaj is selected, the input amount is NET.
             // We need to gross it up for the "Expense" column because tax is also an expense.
             // Gross = Net / 0.8
-            if (expense.name.toLowerCase() === 'kira' && expense.taxMethod === 'stopaj') {
+            // Fix: Use includes() to handle cases like "Kira " or "Dükkan Kirası"
+            if (expense.name.toLowerCase().includes('kira') && expense.taxMethod === 'stopaj') {
                 return expense.amount / 0.8;
             }
             return expense.amount;
@@ -125,17 +127,9 @@ export function BalanceView() {
     const getExpenseVat = (expense: Expense): number => {
         const amt = getCalculatedAmount(expense);
 
-        // Special Logic for Rent
-        if (expense.name.toLowerCase() === 'kira') {
-            if (expense.taxMethod === 'stopaj') return 0; // No VAT with Stopaj
-            // If VAT, it's 20% (standard for rent with invoice)
-            // Note: If VAT method, amt is Net (same as input), so vat is 20% of net.
-            return amt * 0.20;
-        }
-
-        // Smart Defaults if vatRate is missing or generic
-        if (expense.autoType === 'food_cost') return amt * 0.01; // %1 for Food
-
+        // User has full control via VAT selector.
+        // No more smart defaults or automatic overrides.
+        // If undefined, default to 20% (standard VAT).
         return amt * (expense.vatRate !== undefined ? expense.vatRate : 0.20);
     };
 
@@ -189,7 +183,7 @@ export function BalanceView() {
     }
 
     // TRUE NET: "Her şey ödendikten sonra elimize ne kalıyor"
-    const trueNetCash = netProfit - incomeTax - payableVat;
+    const trueNetCash = netProfit - incomeTax - payableVat - totalStopaj;
 
 
     // --- Actions ---
@@ -344,7 +338,8 @@ export function BalanceView() {
                                                 {/* Name / Parameter Column */}
                                                 <div className="flex-1 flex items-center gap-2">
                                                     {/* Percentage & Courier Inputs (0.1 steps) */}
-                                                    {(expense.autoType === 'percentage' || expense.autoType === 'courier') ? (
+                                                    {/* Percentage Input (Only for Percentage Type) */}
+                                                    {expense.autoType === 'percentage' && (
                                                         <div className="flex items-center gap-2">
                                                             <span className="text-zinc-300">{expense.name}</span>
 
@@ -352,7 +347,7 @@ export function BalanceView() {
                                                                 <input
                                                                     autoFocus
                                                                     type="number"
-                                                                    step="0.1" // Micro-step
+                                                                    step="0.1"
                                                                     className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-center font-bold text-white text-xs"
                                                                     value={tempValue}
                                                                     onChange={e => setTempValue(e.target.value)}
@@ -368,35 +363,61 @@ export function BalanceView() {
                                                                     %{expense.autoValue}
                                                                 </span>
                                                             )}
+                                                        </div>
+                                                    )}
 
-                                                            {/* Courier Cost */}
-                                                            {expense.autoType === 'courier' && (
-                                                                <>
-                                                                    <span className="text-zinc-600 text-xs">x</span>
-                                                                    {editingId === expense.id && editField === 'amount' ? (
-                                                                        <input
-                                                                            autoFocus
-                                                                            type="number"
-                                                                            className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-right font-mono text-xs"
-                                                                            value={tempValue}
-                                                                            onChange={e => setTempValue(e.target.value)}
-                                                                            onBlur={() => saveEdit(expense)}
-                                                                            onKeyDown={e => e.key === 'Enter' && saveEdit(expense)}
-                                                                            onFocus={(e) => e.target.select()}
-                                                                        />
-                                                                    ) : (
-                                                                        <span
-                                                                            className="text-xs text-zinc-500 cursor-pointer hover:text-white border-b border-dashed border-zinc-700 hover:border-zinc-500"
-                                                                            onClick={() => startEditing(expense, 'amount')}
-                                                                        >
-                                                                            {formatCurrency(expense.amount).replace('₺', '')} ₺/pkt
-                                                                        </span>
-                                                                    )}
-                                                                </>
+                                                    {/* Courier Cost Display */}
+                                                    {expense.autoType === 'courier' && (
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-zinc-300">{expense.name}</span>
+
+                                                            {/* Percentage Input for Courier */}
+                                                            {editingId === expense.id && editField === 'autoValue' ? (
+                                                                <input
+                                                                    autoFocus
+                                                                    type="number"
+                                                                    step="1"
+                                                                    className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-center font-bold text-white text-xs"
+                                                                    value={tempValue}
+                                                                    onChange={e => setTempValue(e.target.value)}
+                                                                    onBlur={() => saveEdit(expense)}
+                                                                    onKeyDown={e => e.key === 'Enter' && saveEdit(expense)}
+                                                                    onFocus={(e) => e.target.select()}
+                                                                />
+                                                            ) : (
+                                                                <span
+                                                                    className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded cursor-pointer hover:bg-indigo-500/20"
+                                                                    onClick={() => startEditing(expense, 'autoValue')}
+                                                                >
+                                                                    %{expense.autoValue || 70}
+                                                                </span>
+                                                            )}
+
+                                                            <span className="text-zinc-600 text-xs">x</span>
+
+                                                            {editingId === expense.id && editField === 'amount' ? (
+                                                                <input
+                                                                    autoFocus
+                                                                    type="number"
+                                                                    className="w-16 bg-zinc-800 border border-indigo-500 rounded px-1 text-right font-mono text-xs"
+                                                                    value={tempValue}
+                                                                    onChange={e => setTempValue(e.target.value)}
+                                                                    onBlur={() => saveEdit(expense)}
+                                                                    onKeyDown={e => e.key === 'Enter' && saveEdit(expense)}
+                                                                    onFocus={(e) => e.target.select()}
+                                                                />
+                                                            ) : (
+                                                                <span
+                                                                    className="text-xs text-zinc-500 cursor-pointer hover:text-white border-b border-dashed border-zinc-700 hover:border-zinc-500"
+                                                                    onClick={() => startEditing(expense, 'amount')}
+                                                                >
+                                                                    {formatCurrency(expense.amount).replace('₺', '')} ₺/pkt
+                                                                </span>
                                                             )}
                                                         </div>
-                                                    ) : (
-                                                        // Standard Name
+                                                    )}
+                                                    {/* Standard Name (If not percentage or courier) */}
+                                                    {!(expense.autoType === 'percentage' || expense.autoType === 'courier') && (
                                                         editingId === expense.id && editField === 'name' ? (
                                                             <input
                                                                 autoFocus
@@ -433,7 +454,14 @@ export function BalanceView() {
                                                                     <div className="flex items-center gap-2 ml-8">
                                                                         {/* Toggle Switch */}
                                                                         <div
-                                                                            onClick={() => updateExpense(expense.id, { ...expense, taxMethod: expense.taxMethod === 'stopaj' ? 'kdv' : 'stopaj' })}
+                                                                            onClick={() => {
+                                                                                const newMethod = expense.taxMethod === 'stopaj' ? 'kdv' : 'stopaj';
+                                                                                updateExpense(expense.id, {
+                                                                                    ...expense,
+                                                                                    taxMethod: newMethod,
+                                                                                    vatRate: newMethod === 'kdv' ? 0.20 : 0
+                                                                                });
+                                                                            }}
                                                                             className={`relative inline-flex h-5 w-[76px] items-center rounded-full transition-colors cursor-pointer border border-transparent ${expense.taxMethod === 'stopaj' ? 'bg-orange-500/20 ring-1 ring-orange-500/50' : 'bg-indigo-500/20 ring-1 ring-indigo-500/50'}`}
                                                                         >
                                                                             <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${expense.taxMethod === 'stopaj' ? 'translate-x-[58px] bg-orange-400' : 'translate-x-1 bg-indigo-400'}`} />
@@ -454,6 +482,43 @@ export function BalanceView() {
                                                     )}
                                                 </div>
 
+
+                                                {/* VAT Selector (Hidden for Rent) */}
+                                                {expense.name.toLowerCase() !== 'kira' && (
+                                                    <div className="relative mr-3">
+                                                        <div
+                                                            className="px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300 flex items-center gap-1"
+                                                            onClick={() => setOpenVatDropdownId(openVatDropdownId === expense.id ? null : expense.id)}
+                                                            title="KDV Oranını Değiştir"
+                                                        >
+                                                            %{((expense.vatRate !== undefined ? expense.vatRate : 0.20) * 100).toFixed(0)}
+                                                        </div>
+
+                                                        {/* Dropdown Menu */}
+                                                        {openVatDropdownId === expense.id && (
+                                                            <>
+                                                                <div
+                                                                    className="fixed inset-0 z-10"
+                                                                    onClick={() => setOpenVatDropdownId(null)}
+                                                                />
+                                                                <div className="absolute top-full right-0 mt-1 w-20 bg-zinc-900 border border-zinc-700 rounded shadow-xl z-20 overflow-hidden">
+                                                                    {[0, 0.01, 0.10, 0.20].map((rate) => (
+                                                                        <div
+                                                                            key={rate}
+                                                                            className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-zinc-800 ${expense.vatRate === rate ? 'text-white font-bold' : 'text-zinc-400'}`}
+                                                                            onClick={() => {
+                                                                                updateExpense(expense.id, { ...expense, vatRate: rate });
+                                                                                setOpenVatDropdownId(null);
+                                                                            }}
+                                                                        >
+                                                                            %{rate * 100}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                )}
 
                                                 {/* Amount Column - Navigable */}
                                                 <div className="flex items-center gap-4">
@@ -536,12 +601,7 @@ export function BalanceView() {
                 {/* RIGHT: Tax & Financial Summary (4 Cols) - SWAPPED ORDER */}
                 <div className="xl:col-span-4 space-y-6">
 
-                    {/* Tax Module (Moved Up) */}
-                    <TaxSummary
-                        profit={netProfit}
-                        revenue={monthlyRevenue}
-                        expensesVat={totalExpensesVat}
-                    />
+                    {/* Tax Module Removed - Moved to MonthlyBalanceTab */}
 
                     {/* Main Profit Card (Moved Down & Expanded) */}
                     <div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
@@ -590,24 +650,7 @@ export function BalanceView() {
                                         {formatCurrency(netProfit)}
                                     </span>
                                 </div>
-                                <div className="flex justify-between text-xs">
-                                    <span className="text-zinc-600">
-                                        {companyType === 'limited' ? 'Ödenecek Kurumlar Vergisi' : 'Ödenecek Gelir Vergisi'}
-                                    </span>
-                                    <span className="text-red-400/70 font-mono">-{formatCurrency(incomeTax)}</span>
-                                </div>
-                                {totalStopaj > 0 && (
-                                    <div className="flex justify-between text-xs">
-                                        <span className="text-zinc-600">Ödenecek Stopaj (Kira)</span>
-                                        <span className="text-red-400/70 font-mono">-{formatCurrency(totalStopaj)}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between text-xs">
-                                    <span className="text-zinc-600">Ödenecek KDV (Tahmini)</span>
-                                    <span className="text-red-400/70 font-mono">-{formatCurrency(payableVat)}</span>
-                                </div>
-                                <div className="w-full h-px bg-zinc-800/50 my-1"></div>
-                                <div className="flex justify-between text-xs font-bold text-red-400">
+                                <div className="flex justify-between text-xs font-bold text-red-400 border-t border-zinc-800/50 pt-2 mt-2">
                                     <span className="">Ödenecek Toplam Vergi</span>
                                     <span className="font-mono">-{formatCurrency(incomeTax + payableVat + totalStopaj)}</span>
                                 </div>
@@ -624,6 +667,14 @@ export function BalanceView() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Tax Summary Module */}
+                    <TaxSummary
+                        profit={netProfit}
+                        revenue={monthlyRevenue}
+                        expensesVat={totalExpensesVat}
+                        stopaj={totalStopaj}
+                    />
 
                 </div>
             </div >
