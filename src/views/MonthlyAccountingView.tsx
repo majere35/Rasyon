@@ -6,7 +6,11 @@ import { CustomSelect } from '../components/CustomSelect';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { MonthlyBalanceTab } from '../components/MonthlyBalanceTab';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, History, Check, X } from 'lucide-react';
+import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, Check, X, Printer } from 'lucide-react';
+import { useReactToPrint } from 'react-to-print';
+import { MonthlyReportTemplate } from '../components/MonthlyReportTemplate';
+import { useMonthlyAggregation } from '../hooks/useMonthlyAggregation';
+import { MonthPicker } from '../components/MonthPicker';
 
 // Basic formatter
 const formatCurrency = (amount: number) => {
@@ -121,6 +125,15 @@ export const MonthlyAccountingView = () => {
 
     const isReadOnly = data?.isClosed || false;
 
+    // --- PDF PRINTING LOGIC ---
+    const { aggregatedData, netProfit, netProfitAfterTax, totalTaxPayable } = useMonthlyAggregation(data || {} as any);
+    const componentRef = useRef<HTMLDivElement>(null);
+
+    const handlePrint = useReactToPrint({
+        contentRef: componentRef,
+        documentTitle: `Rasyon_Rapor_${data?.monthStr || ''}`,
+    });
+
     return (
         <div className="space-y-6 pb-20">
             {/* Header / Month Selector */}
@@ -138,17 +151,29 @@ export const MonthlyAccountingView = () => {
 
 
                 <div className="flex items-center gap-2">
-                    <MonthSelector
+                    <MonthPicker
                         selectedMonth={selectedMonth}
                         onChange={setSelectedMonth}
-                        closings={monthlyClosings}
+                        closings={monthlyClosings || []}
                     />
 
                     {data?.isClosed ? (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium">
-                            <CheckCircle className="w-4 h-4" />
-                            <span>KAPALI DÖNEM</span>
-                        </div>
+                        <>
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium">
+                                <CheckCircle className="w-4 h-4" />
+                                <span>KAPALI DÖNEM</span>
+                            </div>
+
+                            {/* PDF Download Button */}
+                            <button
+                                onClick={() => handlePrint()}
+                                className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                title="Raporu PDF Olarak İndir"
+                            >
+                                <Printer className="w-4 h-4" />
+                                <span className="hidden sm:inline">Rapor Al</span>
+                            </button>
+                        </>
                     ) : (data && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 rounded-lg text-sm font-medium">
                             <AlertCircle className="w-4 h-4" />
@@ -255,6 +280,21 @@ export const MonthlyAccountingView = () => {
                 onCancel={closeConfirm}
                 type={confirmModal.type}
             />
+
+            {/* Hidden Print Template */}
+            <div style={{ display: 'none' }}>
+                <div ref={componentRef}>
+                    {data && (
+                        <MonthlyReportTemplate
+                            data={data}
+                            aggregatedData={aggregatedData}
+                            netProfit={netProfit}
+                            netProfitAfterTax={netProfitAfterTax}
+                            totalTaxPayable={totalTaxPayable}
+                        />
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
@@ -764,85 +804,6 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
     );
 };
 
-// Custom Month Selector Component (Styled to match CustomSelect)
-const MonthSelector = ({ selectedMonth, onChange, closings }: { selectedMonth: string, onChange: (m: string) => void, closings: MonthlyMonthData[] }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
 
-    // Generate easy text for month
-    const getMonthText = (m: string) => {
-        const [y, mo] = m.split('-');
-        const date = new Date(Number(y), Number(mo) - 1);
-        return date.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
-    };
-
-    // Close on click outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        if (isOpen) document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isOpen]);
-
-    return (
-        <div className="relative" ref={containerRef}>
-            {/* Trigger Button - Matches CustomSelect style */}
-            <div
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between gap-3 px-3 py-2 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors shadow-sm min-w-[200px]"
-            >
-                <div>
-                    <span className="block text-[10px] text-zinc-500 text-left uppercase tracking-wider font-semibold">SEÇİLİ DÖNEM</span>
-                    <span className="font-medium text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        {getMonthText(selectedMonth)}
-                    </span>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </div>
-
-            {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-zinc-900 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-700 z-50 p-2 animate-in fade-in zoom-in-95 duration-100">
-                    <div className="p-2 border-b border-zinc-100 dark:border-zinc-800 mb-2">
-                        <label className="text-xs text-zinc-500 mb-1 block">Farklı Bir Ay Seç</label>
-                        <input
-                            type="month"
-                            value={selectedMonth}
-                            onChange={(e) => { onChange(e.target.value); setIsOpen(false); }}
-                            className="w-full p-2 rounded bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-indigo-500 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
-                        />
-                    </div>
-
-                    <div className="max-h-60 overflow-y-auto">
-                        <p className="text-xs font-medium text-zinc-400 px-2 py-1">GEÇMİŞ RAPORLAR</p>
-                        {closings.length === 0 && <p className="text-sm text-zinc-500 px-2">Henüz kapatılmış dönem yok.</p>}
-                        {closings
-                            .sort((a, b) => b.monthStr.localeCompare(a.monthStr))
-                            .map(m => (
-                                <button
-                                    key={m.id}
-                                    onClick={() => { onChange(m.monthStr); setIsOpen(false); }}
-                                    className={`w-full text-left p-2 rounded-lg flex items-center justify-between group hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${selectedMonth === m.monthStr ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${m.isClosed ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                            {m.isClosed ? <CheckCircle className="w-4 h-4" /> : <History className="w-4 h-4" />}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{getMonthText(m.monthStr)}</p>
-                                            <p className="text-xs text-zinc-500">{m.isClosed ? 'Kapanış Yapıldı' : 'Aktif'}</p>
-                                        </div>
-                                    </div>
-                                    {selectedMonth === m.monthStr && <Check className="w-4 h-4 text-indigo-600" />}
-                                </button>
-                            ))}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
 
 

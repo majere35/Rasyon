@@ -6,6 +6,15 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: '1.2.5',
+        date: '20 Aralık 2025',
+        changes: [
+            'PDF Rapor İyileştirmeleri: Yazıcı dostu renkler, Türkçe karakter düzeltmeleri, Gider Dağılımı yüzdeleri.',
+            'Yeni Dönem Seçici: Aylık Bilanço sayfasında modern, ızgara yapılı ve yıl gezintili dönem seçici.',
+            'Hata Düzeltmeleri: Beyaz ekran sorunu giderildi ve performans iyileştirmeleri yapıldı.'
+        ]
+    },
+    {
         version: '1.2.2',
         date: '20 Aralık 2025',
         changes: [
