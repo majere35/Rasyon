@@ -37,11 +37,6 @@ export const MonthlyAccountingView = () => {
     // User expects "Save" button. So let's keep local draft, load from store on mount/monthChange.
     const [data, setData] = useState<MonthlyMonthData | null>(null);
 
-    useEffect(() => {
-        loadMonthData(selectedMonth);
-    }, [selectedMonth, monthlyClosings]);
-    // Dependency on monthlyClosings ensures if we import a backup, this updates.
-
     const loadMonthData = (monthStr: string) => {
         setLoading(true);
         // Simulate "fetching" although it's instant local
@@ -62,6 +57,11 @@ export const MonthlyAccountingView = () => {
             setLoading(false);
         }, 100); // 100ms fake delay for smooth transition feel
     };
+
+    useEffect(() => {
+        loadMonthData(selectedMonth);
+    }, [selectedMonth, monthlyClosings]);
+    // Dependency on monthlyClosings ensures if we import a backup, this updates.
 
 
 
@@ -568,13 +568,11 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
         totalAmount: 0
     });
 
-    useEffect(() => {
-        const total = (newSale.cash || 0) + (newSale.creditCard || 0) + (newSale.mealCard || 0) + (newSale.yemeksepeti || 0) + (newSale.trendyol || 0) + (newSale.getirYemek || 0) + (newSale.migrosYemek || 0);
-        setNewSale(prev => ({ ...prev, totalAmount: total }));
-    }, [newSale.cash, newSale.creditCard, newSale.mealCard, newSale.yemeksepeti, newSale.trendyol, newSale.getirYemek, newSale.migrosYemek]);
+    // Calculate total dynamically to avoid useEffect recursion
+    const currentTotal = (newSale.cash || 0) + (newSale.creditCard || 0) + (newSale.mealCard || 0) + (newSale.yemeksepeti || 0) + (newSale.trendyol || 0) + (newSale.getirYemek || 0) + (newSale.migrosYemek || 0);
 
     const addSale = () => {
-        if (!newSale.totalAmount) return alert('Toplam Tutar 0 olamaz.');
+        if (!currentTotal) return alert('Toplam Tutar 0 olamaz.');
 
         const sale: DailySale = {
             id: Date.now().toString(),
@@ -587,7 +585,7 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
             getirYemek: Number(newSale.getirYemek) || 0,
             migrosYemek: Number(newSale.migrosYemek) || 0,
             online: 0,
-            totalAmount: newSale.totalAmount || 0,
+            totalAmount: currentTotal,
             note: newSale.note || ''
         };
 

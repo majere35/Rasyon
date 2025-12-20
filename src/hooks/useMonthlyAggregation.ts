@@ -4,9 +4,7 @@ import type { MonthlyMonthData } from '../types';
 import { useStore } from '../store/useStore';
 
 // Basic formatter
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
-};
+
 
 export function useMonthlyAggregation(data: MonthlyMonthData) {
     const { company } = useStore();
