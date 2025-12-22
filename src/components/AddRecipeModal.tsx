@@ -187,12 +187,12 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-[#18181b] border border-zinc-800 w-full max-w-5xl rounded-xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center md:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-[#18181b] border-t md:border border-zinc-800 w-full md:max-w-5xl md:rounded-xl shadow-2xl h-[90vh] md:h-auto md:max-h-[90vh] overflow-hidden flex flex-col rounded-t-2xl md:rounded-2xl">
 
                 {/* Compact Header */}
-                <div className="px-5 py-3 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-                    <h2 className="font-bold text-white flex items-center gap-2">
+                <div className="px-4 md:px-5 py-2 md:py-3 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+                    <h2 className="font-bold text-white text-sm md:text-base flex items-center gap-2">
                         {editRecipe ? 'Düzenle' : 'Yeni Reçete'}
                         <span className="text-zinc-500 font-normal text-sm hidden sm:inline px-2">|</span>
                         <span className="text-zinc-400 font-normal text-sm hidden sm:inline">{name || 'İsimsiz Ürün'}</span>
@@ -207,13 +207,13 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+                <div className="flex-1 overflow-y-auto p-3 md:p-4 lg:p-6">
+                    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 md:gap-6 h-full">
 
                         {/* LEFT COLUMN: Info & Image (4 cols) */}
                         <div className="lg:col-span-4 space-y-6 flex flex-col">
                             {/* Image Section */}
-                            <div className="space-y-2">
+                            <div className="space-y-2 hidden md:block">
                                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Ürün Görseli</label>
                                 <div
                                     className={`relative aspect-square rounded-xl border-2 border-dashed border-zinc-700 bg-zinc-900/50 overflow-hidden group transition-colors hover:border-zinc-500 cursor-pointer flex flex-col items-center justify-center ${!image ? 'hover:bg-zinc-800' : ''}`}

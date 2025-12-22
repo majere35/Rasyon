@@ -18,9 +18,9 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
     const { aggregatedData, netProfit, netProfitAfterTax, totalTaxPayable } = useMonthlyAggregation(data);
 
     return (
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="flex flex-col xl:grid xl:grid-cols-12 gap-4 md:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* LEFT: Expenses (8 Cols) */}
-            <div className="xl:col-span-8 space-y-6">
+            <div className="xl:col-span-8 space-y-4 md:space-y-6 order-2 xl:order-1">
                 {aggregatedData.groups.map((group) => {
                     const groupTotal = group.items.reduce((sum, item) => sum + item.amount, 0);
                     const groupRevenueShare = aggregatedData.totalRevenue > 0 ? (groupTotal / aggregatedData.totalRevenue) * 100 : 0;
@@ -80,8 +80,8 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
                 })}
             </div>
 
-            {/* RIGHT: Financial Summary (4 Cols) */}
-            <div className="xl:col-span-4 space-y-6">
+            {/* RIGHT: Financial Summary (4 Cols) - Shows first on mobile */}
+            <div className="xl:col-span-4 space-y-4 md:space-y-6 order-1 xl:order-2">
 
                 {/* Tax Summary Module */}
                 <TaxSummary

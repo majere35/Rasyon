@@ -24,7 +24,7 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
 
     return (
         <>
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#18181b] border-t border-zinc-200 dark:border-zinc-800 z-50 pb-safe transition-colors">
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-[#18181b] border-t border-zinc-200 dark:border-zinc-800 z-50 transition-colors" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
                 <div className="flex items-center justify-around p-2">
                     {navItems.map((item) => (
                         <button

@@ -11,9 +11,10 @@ import type { ActiveTab } from '../layouts/DashboardLayout';
 interface SidebarProps {
     activeTab: ActiveTab;
     onTabChange: (tab: ActiveTab) => void;
+    syncIndicator?: React.ReactNode;
 }
 
-export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, syncIndicator }: SidebarProps) {
     const { toggleConfig, user, company } = useStore();
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -140,9 +141,16 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             </div>
 
             {/* Footer / User Info */}
-            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 text-center">
-                <div className="text-[10px] text-zinc-500 font-medium">Created by Ata Ayyıldız</div>
-                <div className="text-[10px] text-zinc-400 dark:text-zinc-600 font-bold mt-0.5">2025 RASYON {APP_VERSION}</div>
+            <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+                {syncIndicator && (
+                    <div className="flex justify-center">
+                        {syncIndicator}
+                    </div>
+                )}
+                <div className="text-center">
+                    <div className="text-[10px] text-zinc-500 font-medium">Created by Ata Ayyıldız</div>
+                    <div className="text-[10px] text-zinc-400 dark:text-zinc-600 font-bold mt-0.5">2025 RASYON {APP_VERSION}</div>
+                </div>
             </div>
 
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />

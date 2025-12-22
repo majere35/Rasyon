@@ -137,20 +137,20 @@ export const MonthlyAccountingView = () => {
     return (
         <div className="space-y-6 pb-20">
             {/* Header / Month Selector */}
-            <div className="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-[#18181b] p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <div className="flex items-center gap-4 mb-4 md:mb-0">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                        <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 bg-white dark:bg-[#18181b] p-3 md:p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <div className="flex items-center gap-3 md:gap-4">
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg shrink-0">
+                        <FileText className="w-5 h-5 md:w-6 md:h-6 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Gerçekleşen Ay Hesapları (Yerel Mod)</h2>
-                        <p className="text-xs text-zinc-500">Gelir ve Giderlerinizi aylık olarak takip edin.</p>
+                        <h2 className="text-base md:text-lg font-bold text-zinc-900 dark:text-zinc-100">Gerçekleşen Ay Hesapları</h2>
+                        <p className="text-xs text-zinc-500 hidden sm:block">Gelir ve Giderlerinizi aylık olarak takip edin.</p>
                     </div>
                 </div>
 
 
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
                     <MonthPicker
                         selectedMonth={selectedMonth}
                         onChange={setSelectedMonth}
@@ -204,7 +204,7 @@ export const MonthlyAccountingView = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-800">
+            <div className="flex gap-1 md:gap-2 border-b border-zinc-200 dark:border-zinc-800 overflow-x-auto">
                 <button
                     onClick={() => setActiveTab('expenses')}
                     disabled={!data}

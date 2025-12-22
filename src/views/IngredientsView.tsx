@@ -190,17 +190,49 @@ export function IngredientsView() {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-6rem)] flex flex-col">
+        <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-6rem)] md:h-[calc(100vh-6rem)] flex flex-col">
             {/* Header */}
             <div>
-                <h2 className="text-3xl font-bold tracking-tight text-white mb-2">Hammadde Yönetimi</h2>
-                <p className="text-zinc-400">Reçetelerinizde kullanacağınız ürünleri ve fiyatlarını buradan yönetin.</p>
+                <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-1 md:mb-2">Hammadde Yönetimi</h2>
+                <p className="text-zinc-400 text-sm md:text-base">Reçetelerinizde kullanacağınız ürünleri ve fiyatlarını buradan yönetin.</p>
             </div>
 
-            <div className="flex bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden flex-1 shadow-xl">
+            {/* Mobile Horizontal Category Tabs */}
+            <div className="md:hidden flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+                <button
+                    onClick={() => setSelectedCategory(null)}
+                    className={`shrink-0 px-3 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${selectedCategory === null
+                        ? 'bg-indigo-500/20 text-indigo-400 font-medium border border-indigo-500/30'
+                        : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
+                        }`}
+                >
+                    <Tag size={14} /> Tümü
+                </button>
+                {ingredientCategories.map(cat => (
+                    <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`shrink-0 px-3 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${selectedCategory === cat.id
+                            ? 'bg-indigo-500/20 text-indigo-400 font-medium border border-indigo-500/30'
+                            : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
+                            }`}
+                    >
+                        <div className={`w-2.5 h-2.5 rounded-full ${cat.color} shrink-0`}></div>
+                        <span className="truncate max-w-[100px]">{cat.name}</span>
+                    </button>
+                ))}
+                <button
+                    onClick={handleAddCategoryClick}
+                    className="shrink-0 px-3 py-2 rounded-lg text-sm bg-zinc-800 text-zinc-500 border border-zinc-700 hover:text-white transition-colors"
+                >
+                    <Plus size={14} />
+                </button>
+            </div>
 
-                {/* LEFT: Categories Sidebar */}
-                <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+            <div className="flex flex-col md:flex-row bg-zinc-900/50 border border-zinc-800 rounded-xl md:rounded-2xl overflow-hidden flex-1 shadow-xl">
+
+                {/* LEFT: Categories Sidebar - Desktop Only */}
+                <div className="hidden md:flex md:w-64 md:flex-col bg-zinc-900 border-r border-zinc-800">
                     <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
                         <span className="font-semibold text-zinc-300 text-sm">Kategoriler</span>
                         <button onClick={handleAddCategoryClick} className="text-zinc-400 hover:text-white p-1 hover:bg-zinc-800 rounded transition-colors">
@@ -384,61 +416,63 @@ export function IngredientsView() {
                         {filteredIngredients.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-48 text-zinc-500">
                                 <AlertCircle size={32} className="mb-2 opacity-50" />
-                                <p>{selectedCategory ? 'Bu kategoride hammadde yok.' : 'Kategori seçerek başlayın.'}</p>
+                                <p className="text-sm md:text-base text-center px-4">{selectedCategory ? 'Bu kategoride hammadde yok.' : 'Kategori seçerek başlayın.'}</p>
                             </div>
                         ) : (
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-[#18181b] text-zinc-500 font-medium border-b border-zinc-800 sticky top-0 z-10">
-                                    <tr>
-                                        <th className="px-6 py-3 w-10">
-                                            <input
-                                                type="checkbox"
-                                                checked={filteredIngredients.length > 0 && selectedIds.size === filteredIngredients.length}
-                                                onChange={toggleSelectAll}
-                                                className="rounded bg-zinc-800 border-zinc-700 text-indigo-600 focus:ring-indigo-500"
-                                            />
-                                        </th>
-                                        <th className="px-6 py-3 font-normal">Hammadde Adı</th>
-                                        <th className="px-6 py-3 font-normal">Birim</th>
-                                        <th className="px-6 py-3 font-normal text-right">Birim Fiyat</th>
-                                        <th className="px-6 py-3 w-20"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-zinc-800/50">
-                                    {filteredIngredients.map(item => (
-                                        <tr key={item.id} className={`group hover:bg-zinc-800/30 transition-colors ${selectedIds.has(item.id) ? 'bg-indigo-500/5' : ''}`}>
-                                            <td className="px-6 py-3">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left text-sm min-w-[500px]">
+                                    <thead className="bg-[#18181b] text-zinc-500 font-medium border-b border-zinc-800 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="hidden md:table-cell px-4 md:px-6 py-3 w-10">
                                                 <input
                                                     type="checkbox"
-                                                    checked={selectedIds.has(item.id)}
-                                                    onChange={() => toggleSelectRow(item.id)}
+                                                    checked={filteredIngredients.length > 0 && selectedIds.size === filteredIngredients.length}
+                                                    onChange={toggleSelectAll}
                                                     className="rounded bg-zinc-800 border-zinc-700 text-indigo-600 focus:ring-indigo-500"
                                                 />
-                                            </td>
-                                            <td className="px-6 py-3 text-white font-medium">{item.name}</td>
-                                            <td className="px-6 py-3 text-zinc-400">
-                                                <span className="bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded text-xs uppercase">
-                                                    {item.unit}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-3 text-right font-mono text-indigo-300">
-                                                {formatCurrency(item.price)}
-                                            </td>
-                                            <td className="px-6 py-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => handleEdit(item)} className="p-1.5 text-zinc-500 hover:text-white hover:bg-indigo-500/20 rounded transition-colors">
-                                                    <Edit2 size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => { setDeleteId(item.id); setDeleteType('ingredient'); }}
-                                                    className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </td>
+                                            </th>
+                                            <th className="px-4 md:px-6 py-3 font-normal">Hammadde Adı</th>
+                                            <th className="px-4 md:px-6 py-3 font-normal">Birim</th>
+                                            <th className="px-4 md:px-6 py-3 font-normal text-right">Birim Fiyat</th>
+                                            <th className="px-2 md:px-6 py-3 w-16 md:w-20"></th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-800/50">
+                                        {filteredIngredients.map(item => (
+                                            <tr key={item.id} className={`group hover:bg-zinc-800/30 transition-colors ${selectedIds.has(item.id) ? 'bg-indigo-500/5' : ''}`}>
+                                                <td className="hidden md:table-cell px-4 md:px-6 py-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.has(item.id)}
+                                                        onChange={() => toggleSelectRow(item.id)}
+                                                        className="rounded bg-zinc-800 border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+                                                    />
+                                                </td>
+                                                <td className="px-4 md:px-6 py-3 text-white font-medium">{item.name}</td>
+                                                <td className="px-4 md:px-6 py-3 text-zinc-400">
+                                                    <span className="bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded text-xs uppercase">
+                                                        {item.unit}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 md:px-6 py-3 text-right font-mono text-indigo-300">
+                                                    {formatCurrency(item.price)}
+                                                </td>
+                                                <td className="px-2 md:px-6 py-3 flex justify-end gap-1 md:gap-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => handleEdit(item)} className="p-1.5 text-zinc-500 hover:text-white hover:bg-indigo-500/20 rounded transition-colors">
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setDeleteId(item.id); setDeleteType('ingredient'); }}
+                                                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
                     </div>
                 </div>

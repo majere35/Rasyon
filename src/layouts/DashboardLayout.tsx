@@ -8,9 +8,10 @@ export type ActiveTab = 'recipes' | 'ingredients' | 'targets' | 'balance' | 'mon
 
 interface DashboardLayoutProps {
     children: (activeTab: ActiveTab) => React.ReactNode;
+    syncIndicator?: React.ReactNode;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children, syncIndicator }: DashboardLayoutProps) {
     const [activeTab, setActiveTab] = useState<ActiveTab>(() => {
         const saved = localStorage.getItem('activeTab');
         return (saved as ActiveTab) || 'recipes';
@@ -28,7 +29,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Desktop Sidebar - Hidden on Mobile */}
             <div className="hidden md:block">
-                <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
+                <Sidebar activeTab={activeTab} onTabChange={handleTabChange} syncIndicator={syncIndicator} />
             </div>
 
             {/* Mobile Header */}
@@ -39,10 +40,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     </div>
                     <h1 className="font-bold text-zinc-900 dark:text-white tracking-tight">RASYON</h1>
                 </div>
-                <div className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 bg-zinc-100 dark:bg-zinc-900 px-2 py-1 rounded-full">v1.1</div>
+                <div className="flex items-center gap-2">
+                    {syncIndicator}
+                </div>
             </div>
 
-            <main className="flex-1 h-screen overflow-auto relative pt-16 md:pt-0 pb-20 md:pb-0">
+            <main className="flex-1 h-screen overflow-auto relative pt-16 md:pt-0" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/10 via-zinc-50/0 to-zinc-50/0 dark:from-indigo-900/20 dark:via-zinc-900/0 dark:to-zinc-900/0 pointer-events-none transition-colors" />
 
                 <div className="relative p-4 md:p-8 max-w-7xl mx-auto">
@@ -55,3 +58,4 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
     );
 }
+

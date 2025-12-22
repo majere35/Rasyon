@@ -114,7 +114,7 @@ export function NumberInput({ value, onChange, min = 0, max, step = 1, className
     };
 
     return (
-        <div className={`relative flex items-center bg-zinc-800 rounded-lg group focus-within:ring-1 focus-within:ring-indigo-500 transition-all ${className}`}>
+        <div className={`relative flex items-center bg-zinc-800 rounded-lg group focus-within:ring-1 focus-within:ring-indigo-500 transition-all min-h-[44px] ${className}`}>
             <input
                 ref={inputRef}
                 type="text"

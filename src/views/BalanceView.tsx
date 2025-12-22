@@ -283,10 +283,10 @@ export function BalanceView() {
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 border-b border-zinc-800 pb-6">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight text-white mb-1">Aylık Bilanço</h2>
-                    <p className="text-zinc-400 text-sm flex items-center gap-2">
+            <div className="flex flex-col gap-4 border-b border-zinc-800 pb-4 md:pb-6">
+                <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-1">Aylık Bilanço</h2>
+                    <p className="text-zinc-400 text-xs md:text-sm flex flex-col md:flex-row md:items-center gap-1 md:gap-2">
                         <span>Genel finansal durum ve kâr/zarar analizi.</span>
                         <span className="text-orange-400 ml-2 text-xs bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/20">
                             (Tüm giderlerinizi KDV hariç olarak girin.)
@@ -326,9 +326,9 @@ export function BalanceView() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-8">
                 {/* LEFT: Expenses (8 Cols) */}
-                <div className="xl:col-span-8 space-y-6">
+                <div className="xl:col-span-8 space-y-4 md:space-y-6 order-2 xl:order-1">
                     {EXPENSE_GROUPS.map((group) => {
                         const groupExpenses = allExpensesWithCalc.filter(e => e.group === group.id);
                         const groupTotal = groupExpenses.reduce((sum, e) => sum + e.finalAmount, 0);
@@ -467,8 +467,9 @@ export function BalanceView() {
                                                                             <span className="ml-2 text-[10px] text-zinc-500 bg-zinc-900/50 px-1 rounded">
                                                                                 %{expenseRevenueShare.toFixed(1)}
                                                                             </span>
-                                                                            <span className="ml-2 text-[10px] text-orange-400 font-bold tracking-wider opacity-80">
-                                                                                (OTOMATİK HESAPLANIR)
+                                                                            <span className="ml-1 md:ml-2 text-[10px] text-orange-400 font-bold tracking-wider opacity-80">
+                                                                                <span className="hidden md:inline">(OTOMATİK)</span>
+                                                                                <span className="md:hidden">(Oto.)</span>
                                                                             </span>
                                                                         </>
                                                                     )}
@@ -623,8 +624,8 @@ export function BalanceView() {
                     })}
                 </div>
 
-                {/* RIGHT: Tax & Financial Summary (4 Cols) - SWAPPED ORDER */}
-                <div className="xl:col-span-4 space-y-6">
+                {/* RIGHT: Tax & Financial Summary (4 Cols) - Shows first on mobile */}
+                <div className="xl:col-span-4 space-y-4 md:space-y-6 order-1 xl:order-2">
 
                     {/* Tax Module Removed - Moved to MonthlyBalanceTab */}
 
