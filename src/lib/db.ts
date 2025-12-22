@@ -2,7 +2,7 @@ import { doc, setDoc, getDoc, collection, onSnapshot, getDocs, deleteField } fro
 import { db } from './firebase';
 import type { AppState } from '../types';
 
-export const PRESETS = ['recipes', 'salesTargets', 'expenses', 'packagingCosts', 'company', 'daysWorkedInMonth', 'rawIngredients', 'ingredientCategories'];
+export const PRESETS = ['recipes', 'salesTargets', 'expenses', 'packagingCosts', 'company', 'daysWorkedInMonth', 'rawIngredients', 'ingredientCategories', 'monthlyClosings'];
 
 
 export async function getUserData(uid: string): Promise<Partial<AppState> | null> {
@@ -31,12 +31,13 @@ export async function saveUserData(uid: string, data: Partial<AppState>) {
             }
         });
 
-        console.log(`[DB] Saving data for user: ${uid}`, cleanData);
+        console.log(`[DB] Saving data for user: ${uid}`, Object.keys(cleanData));
         const docRef = doc(db, 'users', uid);
         await setDoc(docRef, cleanData, { merge: true });
         console.log(`[DB] Data saved successfully.`);
     } catch (error) {
         console.error(`[DB] Error saving user data:`, error);
+        throw error; // Re-throw so caller can handle
     }
 }
 
