@@ -139,26 +139,27 @@ export function TargetsView() {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+            {/* Header */}
+            <div className="flex justify-between items-end">
                 <div>
-                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-1 md:mb-2">Satış Hedefleri</h2>
+                    <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-white mb-2">Satış Hedefleri</h2>
                     <p className="text-zinc-400 text-sm md:text-base">Ürün bazlı satış hedeflerinizi belirleyin ve kârlılık analizi yapın.</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
                 {/* Left Col: Target List & Packaging */}
-                <div className="lg:col-span-2 space-y-4 md:space-y-8 order-2 lg:order-1">
+                <div className="lg:col-span-2 space-y-4 lg:space-y-8">
                     {/* Sales Targets Table */}
                     <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-visible">
                         {/* Header with Add Button at top right of table area as requested */}
                         <div className="flex justify-between items-center px-4 md:px-6 py-2 md:py-3 bg-zinc-900/80 border-b border-zinc-800 rounded-t-xl">
-                            <h3 className="font-bold text-zinc-300 text-sm md:text-base">Hedef Tablosu</h3>
+                            <h3 className="font-bold text-zinc-300">Hedef Tablosu</h3>
                             <button
                                 onClick={handleAddTarget}
-                                className="px-2 md:px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg flex items-center gap-1 md:gap-2 font-medium text-xs md:text-sm transition-colors"
+                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg flex items-center gap-2 font-medium text-sm transition-colors"
                             >
-                                <Plus size={16} /> <span className="hidden sm:inline">Hedef Ekle</span><span className="sm:hidden">Ekle</span>
+                                <Plus size={16} /> Hedef Ekle
                             </button>
                         </div>
 
@@ -392,8 +393,8 @@ export function TargetsView() {
                         </div>
                     </div>
 
-                    {/* Right Col: Summary Card - Shows first on mobile */}
-                    <div className="space-y-4 md:space-y-6 order-1 lg:order-2">
+                    {/* Right Col: Summary Card */}
+                    <div className="space-y-6">
                         {/* Tax Summary Module */}
                         <TaxSummary
                             title="TAHMİNİ AYLIK VERGİ YÜKÜ (SİMÜLASYON)"
