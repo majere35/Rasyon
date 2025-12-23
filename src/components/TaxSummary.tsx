@@ -14,6 +14,9 @@ export function TaxSummary({ profit, revenue, expensesVat, stopaj = 0, title }: 
 
     // 2025 Turkish Tax Brackets for Sole Proprietorship (Şahıs)
     const calculateIncomeTax = (annualProfit: number) => {
+        // Zarar varsa gelir vergisi yok
+        if (annualProfit <= 0) return 0;
+
         if (!company || company.type === 'limited') {
             // Corporate Tax (Kurumlar Vergisi) - 25% on Profit
             return Math.max(0, annualProfit) * 0.25;

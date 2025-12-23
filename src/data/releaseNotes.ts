@@ -13,7 +13,10 @@ export const releaseNotes: ReleaseNote[] = [
             '📦 Ambalaj Bazlı Fiyatlandırma: Hammadde eklerken artık kutu/kova boyutunu ve fiyatını girin, birim fiyat otomatik hesaplansın.',
             '✨ Otomatik Büyük Harf: Tüm ürün ve malzeme isimlerinde her kelimenin ilk harfi otomatik büyük yazılıyor.',
             '🚫 Tekrar Önleme: Aynı isimde hammadde eklemeye artık izin verilmiyor.',
-            '🏷️ Yeni Başlık: "Restoran Maliyet Yönetimi" - daha profesyonel bir isim.'
+            '🏷️ Yeni Başlık: "Restoran Maliyet Yönetimi" - daha profesyonel bir isim.',
+            '🐛 Vergi Düzeltmesi: Zarar döneminde negatif vergi hesaplaması sorunu giderildi.',
+            '🐛 Stopaj Düzeltmesi: Çift stopaj sayımı hatası düzeltildi.',
+            '📊 Kategori Sistemi: Gider kategorileri merkezi hale getirildi, kelime bazlı eşleştirme kaldırıldı.'
         ]
     },
     {

@@ -44,16 +44,13 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
         // Add Commission VAT
         sums.totalDeductibleVat += commissionVat;
 
-        // 3. Map Invoices via Keywords
+        // 3. Map Invoices by Category (Direct Matching - No Keywords)
         invoices.forEach(inv => {
-            const cat = (inv.category || '').toLowerCase();
-            const desc = (inv.description || '').toLowerCase();
-            const supplier = (inv.supplier || '').toLowerCase();
-            const text = `${cat} ${desc} ${supplier}`;
+            const category = inv.category || 'diger';
             const amt = inv.amount || 0;
 
-            // TAX CALCULATIONS (Keep existing logic)
-            if (cat.includes('kira') || text.includes('kira')) {
+            // TAX CALCULATIONS
+            if (category === 'kira') {
                 if (inv.taxMethod === 'stopaj') {
                     const gross = amt / 0.8;
                     const stopaj = gross * 0.20;
@@ -67,46 +64,66 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
                 sums.totalDeductibleVat += vat;
             }
 
-
-            // CATEGORY MAPPING
-            // Fix: Only map to Rent if it explicitly says 'kira'. 
-            // 'stopaj' keyword alone was causing 'Vergi/Stopaj' category to go to Rent.
-            if (text.includes('kira')) {
-                if (cat.includes('kira') && inv.taxMethod === 'stopaj') {
-                    sums.rent += (amt / 0.8);
-                } else {
+            // CATEGORY MAPPING (Direct by category value)
+            switch (category) {
+                // GENEL YÖNETİM
+                case 'kira':
                     sums.rent += amt;
-                }
-            } else if (text.includes('enerji') || text.includes('elektrik') || text.includes('su ') || text.includes('su faturası') || text.includes('internet') || text.includes('doğalgaz') || text.includes('fatura')) {
-                sums.bills += amt;
-            } else if (text.includes('muhasebe') || text.includes('müşavir') || text.includes('mali')) {
-                sums.accounting += amt;
-            } else if (text.includes('pos') || text.includes('yazılım') || text.includes('adisyon') || text.includes('program')) {
-                sums.pos += amt;
-            } else if (text.includes('ilaç') || text.includes('güvenlik') || text.includes('alarm')) {
-                sums.security += amt;
-            } else if (text.includes('vergi') || text.includes('damga') || text.includes('harç') || cat.includes('vergi')) {
-                sums.taxes += amt;
-            } else if (text.includes('gıda') || text.includes('hammadde') || text.includes('kasap') || text.includes('manav') || text.includes('market') || text.includes('toptan')) {
-                sums.food += amt;
-            } else if (text.includes('ambalaj') || text.includes('kutu') || text.includes('paket') || text.includes('poşet')) {
-                sums.packaging += amt;
-            } else if (text.includes('fire') || text.includes('zayi')) {
-                sums.waste += amt;
-            } else if (text.includes('bakım') || text.includes('onarım') || text.includes('tamir') || text.includes('servis')) {
-                sums.maintenance += amt;
-            } else if (text.includes('reklam') || text.includes('sosyal') || text.includes('tanıtım') || text.includes('medya') || text.includes('ads')) {
-                sums.marketing += amt;
-            } else if (text.includes('kurye') || text.includes('lojistik') || text.includes('dağıtım')) {
-                sums.courier += amt;
-            } else if (text.includes('maaş') || text.includes('huzur') || text.includes('avans')) {
-                sums.salary += amt;
-            } else if (text.includes('sgk') || text.includes('bağkur') || text.includes('sigorta')) {
-                sums.sgk += amt;
-            } else if (text.includes('yol') || text.includes('yemek') || text.includes('ticket') || text.includes('sodexo') || text.includes('multinet') || text.includes('yan hak')) {
-                sums.benefits += amt;
-            } else {
-                sums.other += amt;
+                    break;
+                case 'faturalar':
+                    sums.bills += amt;
+                    break;
+                case 'muhasebe':
+                    sums.accounting += amt;
+                    break;
+                case 'vergi':
+                    sums.taxes += amt;
+                    break;
+                case 'pos':
+                    sums.pos += amt;
+                    break;
+                case 'guvenlik':
+                    sums.security += amt;
+                    break;
+
+                // ÜRETİM GİDERLERİ
+                case 'gida':
+                    sums.food += amt;
+                    break;
+                case 'ambalaj':
+                    sums.packaging += amt;
+                    break;
+                case 'fire':
+                    sums.waste += amt;
+                    break;
+                case 'bakim':
+                    sums.maintenance += amt;
+                    break;
+
+                // SATIŞ & DAĞITIM
+                case 'reklam':
+                    sums.marketing += amt;
+                    break;
+                case 'kurye':
+                    sums.courier += amt;
+                    break;
+
+                // PERSONEL
+                case 'maas':
+                    sums.salary += amt;
+                    break;
+                case 'sgk':
+                    sums.sgk += amt;
+                    break;
+                case 'yan_haklar':
+                    sums.benefits += amt;
+                    break;
+
+                // DİĞER (veya tanınmayan kategoriler)
+                case 'diger':
+                default:
+                    sums.other += amt;
+                    break;
             }
         });
 
@@ -181,6 +198,9 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
 
     // Tax Calculation Logic (Copied/Adapted from TaxSummary for unified view)
     const calculateIncomeTax = (annualProfit: number) => {
+        // Zarar varsa gelir vergisi yok
+        if (annualProfit <= 0) return 0;
+
         if (!company || company.type === 'limited') {
             return Math.max(0, annualProfit) * 0.25;
         }
@@ -204,6 +224,7 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
     const annualTax = calculateIncomeTax(annualProfit);
     const monthlyTax = annualTax / 12;
 
+    // Stopaj ayrı bir vergi ödemesi olarak eklenir (kira net olarak gösterildiği için)
     const totalTaxPayable = monthlyTax + payableVat + aggregatedData.totalStopajTax;
     const netProfitAfterTax = netProfit - totalTaxPayable;
 

@@ -6,6 +6,7 @@ import { CustomSelect } from '../components/CustomSelect';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { MonthlyBalanceTab } from '../components/MonthlyBalanceTab';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { expenseCategoryOptions, getCategoryLabel } from '../data/expenseCategories';
 import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, History, Check, X } from 'lucide-react';
 
 // Basic formatter
@@ -273,7 +274,7 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<Partial<Invoice>>({});
 
-    const categories = ["Gıda", "Ambalaj", "Enerji", "Vergi/Stopaj", "Personel", "Kira", "Bakım/Onarım", "Kurye", "Diğer"];
+    // Kategoriler merkezi dosyadan geliyor
 
     const addInvoice = () => {
         if (!newInvoice.supplier || !newInvoice.amount) return alert('Tedarikçi ve Tutar zorunludur.');
@@ -283,12 +284,12 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
             date: newInvoice.date || new Date().toISOString().slice(0, 10),
             supplier: newInvoice.supplier,
             description: newInvoice.description || '',
-            category: newInvoice.category || 'Diğer',
+            category: newInvoice.category || 'diger',
             amount: Number(newInvoice.amount),
             taxRate: Number(newInvoice.taxRate),
             status: newInvoice.status as 'paid' | 'pending' || 'paid',
             paymentDate: newInvoice.paymentDate,
-            taxMethod: newInvoice.category === 'Kira' ? (newInvoice.taxMethod || 'stopaj') : undefined
+            taxMethod: newInvoice.category === 'kira' ? (newInvoice.taxMethod || 'stopaj') : undefined
         };
 
         const updatedInvoices = [...data.invoices, invoice];
@@ -343,7 +344,7 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                     ...editForm,
                     amount: Number(editForm.amount),
                     taxRate: Number(editForm.taxRate),
-                    taxMethod: editForm.category === 'Kira' ? (editForm.taxMethod || 'stopaj') : undefined
+                    taxMethod: editForm.category === 'kira' ? (editForm.taxMethod || 'stopaj') : undefined
                 } as Invoice;
             }
             return inv;
@@ -374,15 +375,15 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                         <input type="text" placeholder="Açıklama" value={newInvoice.description || ''} onChange={e => setNewInvoice({ ...newInvoice, description: e.target.value })} className="p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm md:col-span-2 lg:flex-1" />
                         <div className="min-w-[120px] lg:w-[120px]">
                             <CustomSelect
-                                value={newInvoice.category || 'Diğer'}
+                                value={newInvoice.category || 'diger'}
                                 onChange={v => setNewInvoice({ ...newInvoice, category: v })}
-                                options={categories.map(c => ({ label: c, value: c }))}
+                                options={expenseCategoryOptions}
                             />
                         </div>
                         <input type="number" placeholder="Tutar" value={newInvoice.amount || ''} onChange={e => setNewInvoice({ ...newInvoice, amount: e.target.valueAsNumber })} className="p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm lg:w-[100px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
 
                         {/* Rent Specific: Tax Method Selector */}
-                        {newInvoice.category === 'Kira' && (
+                        {newInvoice.category === 'kira' && (
                             <div className="min-w-[100px] lg:w-[100px]">
                                 <CustomSelect
                                     value={newInvoice.taxMethod || 'stopaj'}
@@ -437,9 +438,9 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                                         <td className="p-2"><input type="text" value={editForm.supplier} onChange={e => setEditForm({ ...editForm, supplier: e.target.value })} className="w-full p-1 border rounded bg-transparent text-zinc-900 dark:text-zinc-100 dark:border-zinc-700" /></td>
                                         <td className="p-2">
                                             <CustomSelect
-                                                value={editForm.category || 'Diğer'}
+                                                value={editForm.category || 'diger'}
                                                 onChange={v => setEditForm({ ...editForm, category: v })}
-                                                options={categories.map(c => ({ label: c, value: c }))}
+                                                options={expenseCategoryOptions}
                                             />
                                         </td>
                                         <td className="p-2"><input type="text" value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full p-1 border rounded bg-transparent text-zinc-900 dark:text-zinc-100 dark:border-zinc-700" /></td>
@@ -465,11 +466,11 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                                     <>
                                         <td className="p-3 whitespace-nowrap">{formatDateTR(inv.date)}</td>
                                         <td className="p-3 font-medium text-zinc-900 dark:text-zinc-100">{inv.supplier}</td>
-                                        <td className="p-3 text-xs text-zinc-500 opacity-70">{inv.category}</td>
+                                        <td className="p-3 text-xs text-zinc-500 opacity-70">{getCategoryLabel(inv.category)}</td>
                                         <td className="p-3 text-zinc-500 truncate max-w-[200px]">{inv.description}</td>
                                         <td className="p-3 text-right font-medium text-red-600 dark:text-red-400">{formatCurrency(inv.amount)}</td>
                                         <td className="p-3 text-right text-zinc-500">
-                                            {inv.category === 'Kira' && inv.taxMethod === 'stopaj' ? (
+                                            {inv.category === 'kira' && inv.taxMethod === 'stopaj' ? (
                                                 <span className="text-orange-500 font-bold text-xs bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded">STOPAJ</span>
                                             ) : (
                                                 <>%{inv.taxRate}</>
