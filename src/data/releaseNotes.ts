@@ -6,6 +6,16 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: '1.2.4',
+        date: '2025-12-23',
+        changes: [
+            'Gelişmiş PDF raporlama sistemi eklendi',
+            'Özet ve Detaylı rapor seçenekleri',
+            'Yazıcı dostu siyah/beyaz rapor şablonu',
+            'Rapor footer alanında oluşturulma tarihi gösterimi'
+        ]
+    },
+    {
         version: '1.2.3',
         date: '23 Aralık 2025',
         changes: [

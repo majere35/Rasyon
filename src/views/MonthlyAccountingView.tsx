@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import type { MonthlyMonthData, Invoice, DailySale } from '../types';
 import { CustomSelect } from '../components/CustomSelect';
@@ -7,7 +7,8 @@ import { CustomDatePicker } from '../components/CustomDatePicker';
 import { MonthlyBalanceTab } from '../components/MonthlyBalanceTab';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { expenseCategoryOptions, getCategoryLabel } from '../data/expenseCategories';
-import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, History, Check, X } from 'lucide-react';
+import { MonthlyReportTemplate } from '../components/MonthlyReportTemplate';
+import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, History, Check, X, Printer } from 'lucide-react';
 
 // Basic formatter
 const formatCurrency = (amount: number) => {
@@ -71,6 +72,44 @@ export const MonthlyAccountingView = () => {
     });
 
     const closeConfirm = () => setConfirmModal(prev => ({ ...prev, isOpen: false }));
+
+    // Print Preview Modal State
+    const [showReportTypeModal, setShowReportTypeModal] = useState(false);
+    const [reportType, setReportType] = useState<'summary' | 'detailed' | null>(null);
+
+    const handlePrint = () => {
+        const printContent = document.getElementById('monthly-report-template');
+        if (!printContent) return;
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html lang="tr">
+            <head>
+                <meta charset="UTF-8">
+                <title>Aylık Rapor - ${data?.monthStr}</title>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+                <script src="https://cdn.tailwindcss.com"></script>
+                <style>
+                    @media print {
+                        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        @page { size: A4; margin: 0; }
+                    }
+                    body { font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif; }
+                </style>
+            </head>
+            <body>
+                ${printContent.outerHTML}
+                <script>
+                    setTimeout(() => { window.print(); }, 500);
+                </script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
 
     const handleLock = async () => {
         if (!data) return;
@@ -158,14 +197,23 @@ export const MonthlyAccountingView = () => {
                     ))}
 
                     {data?.isClosed ? (
-                        <button
-                            onClick={handleUnlock}
-                            disabled={saving || loading}
-                            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-                        >
-                            <Unlock className="w-4 h-4" />
-                            Düzenle (Kilidi Aç)
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setShowReportTypeModal(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                                <Printer className="w-4 h-4" />
+                                PDF Yazdır
+                            </button>
+                            <button
+                                onClick={handleUnlock}
+                                disabled={saving || loading}
+                                className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                            >
+                                <Unlock className="w-4 h-4" />
+                                Düzenle (Kilidi Aç)
+                            </button>
+                        </>
                     ) : (data && (
                         <button
                             onClick={handleLock}
@@ -256,11 +304,250 @@ export const MonthlyAccountingView = () => {
                 onCancel={closeConfirm}
                 type={confirmModal.type}
             />
+
+            {/* Report Type Selection Modal */}
+            {showReportTypeModal && data && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl p-6 max-w-md w-full shadow-2xl">
+                        <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Rapor Türü Seçin</h2>
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => {
+                                    setReportType('summary');
+                                    setShowReportTypeModal(false);
+                                }}
+                                className="w-full p-4 rounded-lg border-2 border-zinc-200 dark:border-zinc-700 hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors text-left"
+                            >
+                                <div className="font-bold text-zinc-900 dark:text-white">Özet Rapor</div>
+                                <p className="text-sm text-zinc-500 dark:text-zinc-400">Kategorilerin toplamlarını gösteren özet bilanço</p>
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setReportType('detailed');
+                                    setShowReportTypeModal(false);
+                                }}
+                                className="w-full p-4 rounded-lg border-2 border-zinc-200 dark:border-zinc-700 hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors text-left"
+                            >
+                                <div className="font-bold text-zinc-900 dark:text-white">Detaylı Rapor</div>
+                                <p className="text-sm text-zinc-500 dark:text-zinc-400">Tüm gider kalemlerini açıklamalarıyla birlikte listeler</p>
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => setShowReportTypeModal(false)}
+                            className="w-full mt-4 py-2 text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        >
+                            İptal
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Print Preview Modal */}
+            {reportType && data && (
+                <PrintPreviewModal
+                    data={data}
+                    reportType={reportType}
+                    onClose={() => setReportType(null)}
+                    onPrint={handlePrint}
+                />
+            )}
         </div>
     );
 };
 
 // --- Sub-Components ---
+
+// Print Preview Modal with Report Template
+const PrintPreviewModal = ({ data, reportType, onClose, onPrint }: { data: MonthlyMonthData, reportType: 'summary' | 'detailed', onClose: () => void, onPrint: () => void }) => {
+    const { company } = useStore();
+
+    // Calculate aggregated data (same logic as MonthlyBalanceTab)
+    const aggregatedData = useMemo(() => {
+        const invoices = data.invoices || [];
+        const dailySales = data.dailySales || [];
+
+        const totalOnlineSales = dailySales.reduce((sum, sale) => {
+            return sum + (sale.yemeksepeti || 0) + (sale.trendyol || 0) + (sale.getirYemek || 0) + (sale.migrosYemek || 0);
+        }, 0);
+        const commissionCost = totalOnlineSales * 0.10;
+        const commissionVat = commissionCost * 0.20;
+
+        // Initialize sums and details
+        const sums: Record<string, number> = {
+            rent: 0, bills: 0, accounting: 0, pos: 0, security: 0,
+            food: 0, packaging: 0, waste: 0, maintenance: 0,
+            marketing: 0, courier: 0,
+            salary: 0, sgk: 0, benefits: 0,
+            taxes: 0, other: 0,
+            totalDeductibleVat: commissionVat,
+            totalStopajTax: 0
+        };
+
+        const details: Record<string, Invoice[]> = {
+            rent: [], bills: [], accounting: [], pos: [], security: [],
+            food: [], packaging: [], waste: [], maintenance: [],
+            marketing: [], courier: [],
+            salary: [], sgk: [], benefits: [],
+            taxes: [], other: []
+        };
+
+        invoices.forEach(inv => {
+            const category = inv.category || 'diger';
+            const amt = inv.amount || 0;
+
+            // TAX CALCULATIONS
+            if (category === 'kira') {
+                if (inv.taxMethod === 'stopaj') {
+                    const gross = amt / 0.8;
+                    const stopaj = gross * 0.20;
+                    sums.totalStopajTax += stopaj;
+                } else {
+                    sums.totalDeductibleVat += amt * ((inv.taxRate || 20) / 100);
+                }
+            } else {
+                sums.totalDeductibleVat += amt * ((inv.taxRate !== undefined ? inv.taxRate : 20) / 100);
+            }
+
+            let key = 'other';
+            switch (category) {
+                case 'kira': key = 'rent'; break;
+                case 'faturalar': key = 'bills'; break;
+                case 'muhasebe': key = 'accounting'; break;
+                case 'vergi': key = 'taxes'; break;
+                case 'pos': key = 'pos'; break;
+                case 'guvenlik': key = 'security'; break;
+                case 'gida': key = 'food'; break;
+                case 'ambalaj': key = 'packaging'; break;
+                case 'fire': key = 'waste'; break;
+                case 'bakim': key = 'maintenance'; break;
+                case 'reklam': key = 'marketing'; break;
+                case 'kurye': key = 'courier'; break;
+                case 'maas': key = 'salary'; break;
+                case 'sgk': key = 'sgk'; break;
+                case 'yan_haklar': key = 'benefits'; break;
+                default: key = 'other'; break;
+            }
+
+            sums[key] += amt;
+            details[key].push(inv);
+        });
+
+        const totalRevenue = dailySales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
+
+        return {
+            totalRevenue,
+            totalStopajTax: sums.totalStopajTax,
+            totalDeductibleVat: sums.totalDeductibleVat,
+            groups: [
+                {
+                    id: 'general', title: 'GENEL YÖNETİM',
+                    items: [
+                        { name: 'Kira', amount: sums.rent, details: details.rent },
+                        { name: 'Faturalar (Elektrik/Su/İnternet)', amount: sums.bills, details: details.bills },
+                        { name: 'Muhasebe', amount: sums.accounting, details: details.accounting },
+                        { name: 'Vergi ve Harçlar', amount: sums.taxes, details: details.taxes },
+                        { name: 'Pos Yazılım', amount: sums.pos, details: details.pos },
+                        { name: 'İlaçlama ve Güvenlik', amount: sums.security, details: details.security },
+                        ...(sums.other > 0 ? [{ name: 'Diğer', amount: sums.other, details: details.other }] : [])
+                    ]
+                },
+                {
+                    id: 'production', title: 'ÜRETİM GİDERLERİ',
+                    items: [
+                        { name: 'Gıda Hammadde', amount: sums.food, details: details.food },
+                        { name: 'Ambalaj', amount: sums.packaging, details: details.packaging },
+                        { name: 'Fire/Zayii', amount: sums.waste, details: details.waste },
+                        { name: 'Bakım/Onarım', amount: sums.maintenance, details: details.maintenance }
+                    ]
+                },
+                {
+                    id: 'sales', title: 'SATIŞ & DAĞITIM',
+                    items: [
+                        { name: 'Online Satış Komisyonları', amount: commissionCost, isAuto: true, note: '%10' },
+                        { name: 'Reklam Giderleri', amount: sums.marketing, details: details.marketing },
+                        { name: 'Kurye Masrafı', amount: sums.courier, details: details.courier }
+                    ]
+                },
+                {
+                    id: 'personnel', title: 'PERSONEL',
+                    items: [
+                        { name: 'Net Maaş', amount: sums.salary, details: details.salary },
+                        { name: 'SGK', amount: sums.sgk, details: details.sgk },
+                        { name: 'Yol, Yemek ve Yan Haklar', amount: sums.benefits, details: details.benefits }
+                    ]
+                }
+            ]
+        };
+    }, [data]);
+
+    const totalExpenses = aggregatedData.groups.reduce((sum: number, group: { items: { amount: number }[] }) => {
+        return sum + group.items.reduce((gSum: number, item: { amount: number }) => gSum + item.amount, 0);
+    }, 0);
+
+    const netProfit = aggregatedData.totalRevenue - totalExpenses;
+
+    const calculateIncomeTax = (annualProfit: number) => {
+        if (annualProfit <= 0) return 0;
+        if (!company || company.type === 'limited') {
+            return Math.max(0, annualProfit) * 0.25;
+        }
+        let tax = 0;
+        const income = annualProfit;
+        if (income <= 158000) tax = income * 0.15;
+        else if (income <= 330000) tax = 23700 + (income - 158000) * 0.20;
+        else if (income <= 800000) tax = 58100 + (income - 330000) * 0.27;
+        else if (income <= 4300000) tax = 185000 + (income - 800000) * 0.35;
+        else tax = 1410000 + (income - 4300000) * 0.40;
+        return tax;
+    };
+
+    const incomeVat = aggregatedData.totalRevenue * 0.10;
+    const payableVat = Math.max(0, incomeVat - aggregatedData.totalDeductibleVat);
+    const annualProfit = netProfit * 12;
+    const annualTax = calculateIncomeTax(annualProfit);
+    const monthlyTax = annualTax / 12;
+    const totalTaxPayable = monthlyTax + payableVat + aggregatedData.totalStopajTax;
+    const netProfitAfterTax = netProfit - totalTaxPayable;
+
+    return (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-auto">
+            <div className="bg-white rounded-xl max-w-[230mm] w-full max-h-[95vh] overflow-auto shadow-2xl">
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
+                    <h2 className="text-lg font-bold text-gray-900">Rapor Önizleme</h2>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onPrint}
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                            <Printer className="w-4 h-4" />
+                            Yazdır
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="flex items-center gap-2 px-4 py-2 bg-zinc-200 hover:bg-zinc-300 text-zinc-700 rounded-lg text-sm font-medium transition-colors"
+                        >
+                            <X className="w-4 h-4" />
+                            Kapat
+                        </button>
+                    </div>
+                </div>
+
+                {/* Report Content */}
+                <div className="p-6">
+                    <MonthlyReportTemplate
+                        data={data}
+                        aggregatedData={aggregatedData}
+                        netProfit={netProfit}
+                        netProfitAfterTax={netProfitAfterTax}
+                        totalTaxPayable={totalTaxPayable}
+                        reportType={reportType}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isReadOnly: boolean, onChange: (d: MonthlyMonthData) => void }) => {
     // New Invoice Form State
