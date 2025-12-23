@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { AppState, Recipe, SalesTarget, Expense } from '../types';
+import type { AppState, Recipe, SalesTarget, Expense, IntermediateProduct } from '../types';
 import { storage } from '../lib/storage';
 
 export const useStore = create<AppState>()(
@@ -25,6 +25,9 @@ export const useStore = create<AppState>()(
             // Ingredients Feature Defaults
             rawIngredients: [],
             ingredientCategories: [],
+
+            // Intermediate Products Feature
+            intermediateProducts: [],
 
             initializeDefaults: () => set((state) => {
                 if (state.expenses.length > 0) return {}; // Don't overwrite if exists
@@ -191,6 +194,56 @@ export const useStore = create<AppState>()(
                 rawIngredients: state.rawIngredients.filter(item => !ids.includes(item.id))
             })),
 
+            // --- Intermediate Products Actions ---
+            addIntermediateProduct: (product: IntermediateProduct) => set((state) => ({
+                intermediateProducts: [...state.intermediateProducts, product]
+            })),
+
+            updateIntermediateProduct: (id: string, updated: IntermediateProduct) => set((state) => {
+                const newProducts = state.intermediateProducts.map(item =>
+                    item.id === id ? updated : item
+                );
+
+                // Auto-update linked recipes (similar to rawIngredient logic)
+                let recipeUpdated = false;
+                const newRecipes = state.recipes.map(recipe => {
+                    const needsUpdate = recipe.ingredients.some(i => i.intermediateProductId === id);
+                    if (!needsUpdate) return recipe;
+
+                    recipeUpdated = true;
+                    const newRecipeIngredients = recipe.ingredients.map(ing => {
+                        if (ing.intermediateProductId === id) {
+                            return { ...ing, price: updated.costPerUnit, unit: updated.productionUnit };
+                        }
+                        return ing;
+                    });
+
+                    const newTotalCost = newRecipeIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+                    // Keep calculatedPrice FIXED, update costMultiplier
+                    let newCostMultiplier = recipe.costMultiplier;
+                    if (newTotalCost > 0 && recipe.calculatedPrice > 0) {
+                        newCostMultiplier = recipe.calculatedPrice / newTotalCost;
+                    }
+
+                    return {
+                        ...recipe,
+                        ingredients: newRecipeIngredients,
+                        totalCost: newTotalCost,
+                        costMultiplier: newCostMultiplier
+                    };
+                });
+
+                return {
+                    intermediateProducts: newProducts,
+                    recipes: recipeUpdated ? newRecipes : state.recipes
+                };
+            }),
+
+            deleteIntermediateProduct: (id: string) => set((state) => ({
+                intermediateProducts: state.intermediateProducts.filter(item => item.id !== id)
+            })),
+
             // Helper for Packaging Costs
             addPackagingCost: (cost) => set((state) => ({ packagingCosts: [...state.packagingCosts, cost] })),
             updatePackagingCost: (id, cost) => set((state) => {
@@ -239,6 +292,7 @@ export const useStore = create<AppState>()(
                 packagingCosts: state.packagingCosts,
                 rawIngredients: state.rawIngredients,
                 ingredientCategories: state.ingredientCategories,
+                intermediateProducts: state.intermediateProducts,
                 monthlyClosings: state.monthlyClosings, // Persist monthly data
             }),
         }

@@ -5,6 +5,7 @@ export interface Ingredient {
     unit: 'kg' | 'lt' | 'adet' | 'gr' | 'cl';
     price: number;
     rawIngredientId?: string; // Link to global raw ingredient
+    intermediateProductId?: string; // Link to intermediate product (ara ürün)
 }
 
 export interface IngredientCategory {
@@ -17,9 +18,13 @@ export interface RawIngredient {
     id: string;
     name: string;
     categoryId: string;
-    price: number;
+    price: number; // Unit price (per kg/lt) - CALCULATED from package
     unit: 'kg' | 'lt' | 'adet' | 'gr' | 'cl';
     minimumStock?: number;
+    // Package-based pricing
+    packageQuantity?: number;   // Package quantity (350, 9, 5 etc.)
+    packageUnit?: 'kg' | 'lt' | 'adet' | 'gr' | 'cl';  // Package unit
+    packagePrice?: number;      // Package price
 }
 
 export interface Recipe {
@@ -30,6 +35,16 @@ export interface Recipe {
     costMultiplier: number;
     calculatedPrice: number;
     image?: string;
+}
+
+export interface IntermediateProduct {
+    id: string;
+    name: string;
+    ingredients: Ingredient[];
+    totalCost: number;
+    productionQuantity: number;
+    productionUnit: 'kg' | 'lt' | 'adet';
+    costPerUnit: number;
 }
 
 export interface SalesTarget {
@@ -89,6 +104,12 @@ export interface AppState {
     addIngredientCategory: (category: IngredientCategory) => void;
     updateIngredientCategory: (id: string, updated: Partial<IngredientCategory>) => void;
     deleteIngredientCategory: (id: string) => void;
+
+    // Intermediate Products Feature
+    intermediateProducts: IntermediateProduct[];
+    addIntermediateProduct: (product: IntermediateProduct) => void;
+    updateIntermediateProduct: (id: string, product: IntermediateProduct) => void;
+    deleteIntermediateProduct: (id: string) => void;
 
     addRecipe: (recipe: Recipe) => void;
     updateRecipe: (id: string, updated: Recipe) => void;

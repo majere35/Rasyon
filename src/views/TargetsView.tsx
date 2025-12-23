@@ -5,7 +5,7 @@ import { CustomSelect } from '../components/CustomSelect';
 import { NumberInput } from '../components/NumberInput';
 import { TaxSummary } from '../components/TaxSummary';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, toTitleCase } from '../lib/utils';
 import type { SalesTarget, Expense } from '../types';
 
 export function TargetsView() {
@@ -299,7 +299,7 @@ export function TargetsView() {
                                                 autoFocus
                                                 type="text"
                                                 value={editPkgName}
-                                                onChange={(e) => setEditPkgName(e.target.value)}
+                                                onChange={(e) => setEditPkgName(toTitleCase(e.target.value))}
                                                 onFocus={(e) => e.target.select()}
                                                 className="flex-1 bg-zinc-800 text-white px-2 py-0.5 rounded border border-indigo-500/50 outline-none text-xs"
                                                 onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
@@ -355,7 +355,7 @@ export function TargetsView() {
                                     ref={nameRef}
                                     type="text"
                                     value={newPkgName}
-                                    onChange={(e) => setNewPkgName(e.target.value)}
+                                    onChange={(e) => setNewPkgName(toTitleCase(e.target.value))}
                                     placeholder="Yeni Malzeme (Örn: Paket)"
                                     onFocus={(e) => e.target.select()}
                                     className="flex-1 bg-transparent border-b border-zinc-700/50 focus:border-indigo-500 px-2 py-0.5 text-white placeholder-zinc-600 focus:outline-none transition-colors text-xs"

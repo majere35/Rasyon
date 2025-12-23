@@ -38,7 +38,10 @@ export function IngredientsView() {
         name: '',
         price: 0,
         unit: 'kg',
-        minimumStock: 0
+        minimumStock: 0,
+        packageQuantity: undefined,
+        packageUnit: 'gr',
+        packagePrice: undefined
     });
 
     // Delete Modal
@@ -66,35 +69,99 @@ export function IngredientsView() {
         return matchesSearch && matchesCategory;
     });
 
+    // Convert package quantity to base unit (kg or lt)
+    const convertToBaseUnit = (quantity: number, fromUnit: string, toUnit: string): number => {
+        // Convert to grams/ml first
+        let inSmallUnit = quantity;
+        if (fromUnit === 'kg' || fromUnit === 'lt') {
+            inSmallUnit = quantity * 1000;
+        } else if (fromUnit === 'cl') {
+            inSmallUnit = quantity * 10; // cl to ml
+        }
+        // gr/ml stays as is
+
+        // Convert from grams/ml to target
+        if (toUnit === 'kg' || toUnit === 'lt') {
+            return inSmallUnit / 1000;
+        } else if (toUnit === 'cl') {
+            return inSmallUnit / 10;
+        }
+        return inSmallUnit; // gr or ml
+    };
+
+    // Calculate unit price from package
+    const calculateUnitPrice = () => {
+        const qty = formData.packageQuantity || 0;
+        const price = formData.packagePrice || 0;
+        const pkgUnit = formData.packageUnit || 'gr';
+        const baseUnit = formData.unit || 'kg';
+
+        if (qty > 0 && price > 0) {
+            const quantityInBaseUnit = convertToBaseUnit(qty, pkgUnit, baseUnit);
+            if (quantityInBaseUnit > 0) {
+                return price / quantityInBaseUnit;
+            }
+        }
+        return formData.price || 0;
+    };
+
+    // Computed unit price for display
+    const computedUnitPrice = calculateUnitPrice();
+
+    // Title case helper - capitalize first letter of each word (Turkish-safe)
+    const toTitleCase = (str: string) => {
+        return str
+            .split(' ')
+            .map(word => word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : '')
+            .join(' ');
+    };
+
+    // Check for duplicate ingredient name
+    const isDuplicateName = (name: string, excludeId?: string) => {
+        const normalizedName = name.trim().toLowerCase();
+        return rawIngredients.some(item =>
+            item.name.toLowerCase() === normalizedName && item.id !== excludeId
+        );
+    };
+
     // CRUD Handlers
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.name || !selectedCategory) return;
 
+        // Check for duplicate name
+        if (isDuplicateName(formData.name, editingId || undefined)) {
+            setWarningMessage('Bu isimde bir hammadde zaten mevcut. Lütfen farklı bir isim girin.');
+            return;
+        }
+
+        // Calculate unit price from package if package data exists
+        const unitPrice = formData.packageQuantity && formData.packagePrice
+            ? calculateUnitPrice()
+            : Number(formData.price);
+
+        const ingredientData: RawIngredient = {
+            id: editingId || crypto.randomUUID(),
+            categoryId: selectedCategory,
+            name: formData.name,
+            price: unitPrice,
+            unit: formData.unit as any || 'kg',
+            minimumStock: Number(formData.minimumStock),
+            packageQuantity: formData.packageQuantity,
+            packageUnit: formData.packageUnit as any,
+            packagePrice: formData.packagePrice
+        };
+
         if (editingId) {
-            updateRawIngredient(editingId, {
-                id: editingId,
-                categoryId: selectedCategory,
-                name: formData.name,
-                price: Number(formData.price),
-                unit: formData.unit as any,
-                minimumStock: Number(formData.minimumStock)
-            });
+            updateRawIngredient(editingId, ingredientData);
             setEditingId(null);
         } else {
-            addRawIngredient({
-                id: crypto.randomUUID(),
-                categoryId: selectedCategory,
-                name: formData.name!,
-                price: Number(formData.price),
-                unit: formData.unit as any || 'kg',
-                minimumStock: Number(formData.minimumStock)
-            });
+            addRawIngredient(ingredientData);
         }
 
         // Reset Form but keep category
-        setFormData({ name: '', price: 0, unit: 'kg', minimumStock: 0 });
+        setFormData({ name: '', price: 0, unit: 'kg', minimumStock: 0, packageQuantity: undefined, packageUnit: 'gr', packagePrice: undefined });
         setIsAddMode(false);
     };
 
@@ -103,7 +170,10 @@ export function IngredientsView() {
             name: ingredient.name,
             price: ingredient.price,
             unit: ingredient.unit,
-            minimumStock: ingredient.minimumStock
+            minimumStock: ingredient.minimumStock,
+            packageQuantity: ingredient.packageQuantity,
+            packageUnit: ingredient.packageUnit,
+            packagePrice: ingredient.packagePrice
         });
         setEditingId(ingredient.id);
         setSelectedCategory(ingredient.categoryId);
@@ -318,63 +388,110 @@ export function IngredientsView() {
                     {/* Add/Edit Form Panel */}
                     {(isAddMode && selectedCategory) && (
                         <div className="border-b border-indigo-500/30 bg-indigo-500/5 p-4 animate-in slide-in-from-top-2">
-                            <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-4">
-                                {editingId && (
-                                    <div className="space-y-1 w-40">
-                                        <label className="text-xs font-semibold text-indigo-300 ml-1">Kategori</label>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                {/* Row 1: Category (if editing) + Name */}
+                                <div className="flex flex-wrap items-end gap-4">
+                                    {editingId && (
+                                        <div className="space-y-1 w-40">
+                                            <label className="text-xs font-semibold text-indigo-300 ml-1">Kategori</label>
+                                            <select
+                                                value={selectedCategory}
+                                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-white focus:border-indigo-500 outline-none text-sm h-[38px]"
+                                            >
+                                                {ingredientCategories.map(cat => (
+                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                    <div className="space-y-1 flex-1 min-w-[200px]">
+                                        <label className="text-xs font-semibold text-indigo-300 ml-1">Ürün Adı</label>
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            required
+                                            value={formData.name}
+                                            onChange={e => setFormData({ ...formData, name: toTitleCase(e.target.value) })}
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
+                                            placeholder="Örn: Sarımsak Püresi"
+                                        />
+                                    </div>
+                                    <div className="space-y-1 w-24">
+                                        <label className="text-xs font-semibold text-indigo-300 ml-1">Birim</label>
                                         <select
-                                            value={selectedCategory}
-                                            onChange={(e) => setSelectedCategory(e.target.value)}
+                                            value={formData.unit}
+                                            onChange={e => setFormData({ ...formData, unit: e.target.value as any })}
                                             className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-white focus:border-indigo-500 outline-none text-sm h-[38px]"
                                         >
-                                            {ingredientCategories.map(cat => (
-                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                            ))}
+                                            <option value="kg">Kg</option>
+                                            <option value="lt">Lt</option>
+                                            <option value="adet">Adet</option>
                                         </select>
                                     </div>
-                                )}
-                                <div className="space-y-1 flex-1 min-w-[200px]">
-                                    <label className="text-xs font-semibold text-indigo-300 ml-1">Ürün Adı</label>
-                                    <input
-                                        autoFocus
-                                        type="text"
-                                        required
-                                        value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white focus:border-indigo-500 outline-none"
-                                        placeholder="Örn: Un"
-                                    />
-                                </div>
-                                <div className="space-y-1 w-32">
-                                    <label className="text-xs font-semibold text-indigo-300 ml-1">Birim Fiyat</label>
-                                    <NumberInput
-                                        value={formData.price || 0}
-                                        onChange={val => setFormData({ ...formData, price: val })}
-                                        className="w-full bg-zinc-900"
-                                        step={0.001}
-                                    />
-                                </div>
-                                <div className="space-y-1 w-24">
-                                    <label className="text-xs font-semibold text-indigo-300 ml-1">Birim</label>
-                                    <select
-                                        value={formData.unit}
-                                        onChange={e => setFormData({ ...formData, unit: e.target.value as any })}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-white focus:border-indigo-500 outline-none text-sm h-[38px]"
-                                    >
-                                        <option value="kg">Kg</option>
-                                        <option value="lt">Lt</option>
-                                        <option value="adet">Adet</option>
-                                        <option value="gr">Gr</option>
-                                        <option value="cl">Cl</option>
-                                    </select>
                                 </div>
 
-                                <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded font-medium h-[38px]">
-                                    {editingId ? 'Güncelle' : 'Ekle'}
-                                </button>
-                                <button type="button" onClick={() => setIsAddMode(false)} className="text-zinc-400 hover:text-white px-3 py-2 h-[38px]">
-                                    İptal
-                                </button>
+                                {/* Row 2: Package-based pricing */}
+                                <div className="flex flex-wrap items-end gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800">
+                                    <div className="text-xs text-zinc-500 w-full mb-1">
+                                        📦 Ambalaj Bilgisi <span className="text-zinc-600">(birim fiyat otomatik hesaplanır)</span>
+                                    </div>
+
+                                    <div className="space-y-1 w-24">
+                                        <label className="text-xs font-semibold text-zinc-500 ml-1">Miktar</label>
+                                        <NumberInput
+                                            value={formData.packageQuantity || 0}
+                                            onChange={val => setFormData({ ...formData, packageQuantity: val || undefined })}
+                                            className="w-full bg-zinc-800"
+                                            placeholder="350"
+                                            step={1}
+                                        />
+                                    </div>
+                                    <div className="space-y-1 w-20">
+                                        <label className="text-xs font-semibold text-zinc-500 ml-1">Birim</label>
+                                        <select
+                                            value={formData.packageUnit}
+                                            onChange={e => setFormData({ ...formData, packageUnit: e.target.value as any })}
+                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-2 text-white outline-none text-sm h-[38px]"
+                                        >
+                                            <option value="gr">Gr</option>
+                                            <option value="kg">Kg</option>
+                                            <option value="lt">Lt</option>
+                                            <option value="cl">Cl</option>
+                                            <option value="adet">Adet</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1 w-28">
+                                        <label className="text-xs font-semibold text-zinc-500 ml-1">Ambalaj Fiyatı</label>
+                                        <NumberInput
+                                            value={formData.packagePrice || 0}
+                                            onChange={val => setFormData({ ...formData, packagePrice: val || undefined })}
+                                            className="w-full bg-zinc-800"
+                                            placeholder="45"
+                                            step={0.01}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-2 ml-2">
+                                        <span className="text-zinc-600">=</span>
+                                        <div className="bg-indigo-500/10 border border-indigo-500/30 rounded px-3 py-2">
+                                            <span className="text-xs text-indigo-400">Birim Fiyat: </span>
+                                            <span className="font-mono text-indigo-300 font-bold">
+                                                {computedUnitPrice.toFixed(2)}₺/{formData.unit}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Row 3: Actions */}
+                                <div className="flex justify-end gap-3">
+                                    <button type="button" onClick={() => setIsAddMode(false)} className="text-zinc-400 hover:text-white px-4 py-2">
+                                        İptal
+                                    </button>
+                                    <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded font-medium">
+                                        {editingId ? 'Güncelle' : 'Ekle'}
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     )}
