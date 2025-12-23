@@ -6,6 +6,17 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: '1.2.6',
+        date: '23 Aralık 2025',
+        changes: [
+            '🧪 Ara Ürün Desteği: Soslar, karışımlar gibi ara ürünlerin reçetelerini oluşturun ve ana ürünlerde kullanın.',
+            '📦 Ambalaj Bazlı Fiyatlandırma: Hammadde eklerken artık kutu/kova boyutunu ve fiyatını girin, birim fiyat otomatik hesaplansın.',
+            '✨ Otomatik Büyük Harf: Tüm ürün ve malzeme isimlerinde her kelimenin ilk harfi otomatik büyük yazılıyor.',
+            '🚫 Tekrar Önleme: Aynı isimde hammadde eklemeye artık izin verilmiyor.',
+            '🏷️ Yeni Başlık: "Restoran Maliyet Yönetimi" - daha profesyonel bir isim.'
+        ]
+    },
+    {
         version: '1.2.5',
         date: '20 Aralık 2025',
         changes: [

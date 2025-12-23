@@ -29,3 +29,11 @@ export function formatNumber(amount: number): string {
         return '0';
     }
 }
+
+// Title case helper - capitalize first letter of each word (Turkish-safe)
+export function toTitleCase(str: string): string {
+    return str
+        .split(' ')
+        .map(word => word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : '')
+        .join(' ');
+}

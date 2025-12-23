@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, Save, Upload, Image as ImageIcon, Link, Copy } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { NumberInput } from './NumberInput';
+import { toTitleCase } from '../lib/utils';
 import type { Recipe, Ingredient } from '../types';
 
 interface AddRecipeModalProps {
@@ -11,7 +12,7 @@ interface AddRecipeModalProps {
 }
 
 export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalProps) {
-    const { addRecipe, updateRecipe, rawIngredients, recipes } = useStore();
+    const { addRecipe, updateRecipe, rawIngredients, recipes, intermediateProducts } = useStore();
     const [name, setName] = useState('');
     const [ingredients, setIngredients] = useState<Omit<Ingredient, 'id'>[]>([]);
     const [costMultiplier, setCostMultiplier] = useState(2.5);
@@ -123,7 +124,23 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
             name: rawIngredient.name,
             unit: rawIngredient.unit,
             price: rawIngredient.price,
-            rawIngredientId: rawIngredient.id
+            rawIngredientId: rawIngredient.id,
+            intermediateProductId: undefined // Clear any intermediate product link
+        };
+        setIngredientsWithFixedPrice(newIngredients);
+        setShowSuggestions(false);
+        setActiveSearchIndex(null);
+    };
+
+    const selectIntermediateProduct = (index: number, product: any) => {
+        const newIngredients = [...ingredients];
+        newIngredients[index] = {
+            ...newIngredients[index],
+            name: product.name,
+            unit: product.productionUnit,
+            price: product.costPerUnit,
+            rawIngredientId: undefined, // Clear any raw ingredient link
+            intermediateProductId: product.id
         };
         setIngredientsWithFixedPrice(newIngredients);
         setShowSuggestions(false);
@@ -133,6 +150,15 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
     const filteredRawIngredients = searchQuery
         ? rawIngredients.filter(ri => ri.name.toLowerCase().includes(searchQuery.toLowerCase()))
         : rawIngredients;
+
+    const filteredIntermediateProducts = searchQuery
+        ? intermediateProducts.filter(ip => ip.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : intermediateProducts;
+
+    // Check if ingredient is linked (either to raw ingredient or intermediate product)
+    const isIngredientLinked = (item: Omit<Ingredient, 'id'>) => {
+        return !!item.rawIngredientId || !!item.intermediateProductId;
+    };
 
 
 
@@ -260,7 +286,7 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                 <input
                                     type="text"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    onChange={(e) => setName(toTitleCase(e.target.value))}
                                     placeholder="Örn: Gravity Burger"
                                     className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500 transition-colors"
                                 />
@@ -362,41 +388,76 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                             value={item.name}
                                                             onChange={(e) => handleIngredientSearch(index, e.target.value)}
                                                             onFocus={() => {
-                                                                if (!item.rawIngredientId) {
+                                                                if (!isIngredientLinked(item)) {
                                                                     setActiveSearchIndex(index);
                                                                     setSearchQuery(item.name);
                                                                     setShowSuggestions(true);
                                                                 }
                                                             }}
-                                                            readOnly={!!item.rawIngredientId}
+                                                            readOnly={isIngredientLinked(item)}
                                                             placeholder="Malzeme adı..."
-                                                            className={`w-full bg-transparent border-dashed border-b p-0 text-sm pb-1 focus:ring-0 ${item.rawIngredientId
-                                                                ? 'text-indigo-400 font-medium border-transparent'
-                                                                : 'text-zinc-200 border-zinc-700 placeholder-zinc-700 focus:border-indigo-500'
+                                                            className={`w-full bg-transparent border-dashed border-b p-0 text-sm pb-1 focus:ring-0 ${item.intermediateProductId
+                                                                ? 'text-orange-400 font-medium border-transparent'
+                                                                : item.rawIngredientId
+                                                                    ? 'text-indigo-400 font-medium border-transparent'
+                                                                    : 'text-zinc-200 border-zinc-700 placeholder-zinc-700 focus:border-indigo-500'
                                                                 }`}
                                                         />
                                                         {item.rawIngredientId && (
                                                             <Link size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-indigo-500/50" />
                                                         )}
+                                                        {item.intermediateProductId && (
+                                                            <Link size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-orange-500/50" />
+                                                        )}
                                                     </div>
 
                                                     {/* Auto-complete Dropdown */}
-                                                    {showSuggestions && activeSearchIndex === index && !item.rawIngredientId && (
-                                                        <div ref={searchRef} className="absolute left-0 top-full mt-1 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
-                                                            {filteredRawIngredients.length > 0 ? (
-                                                                filteredRawIngredients.map(ri => (
-                                                                    <div
-                                                                        key={ri.id}
-                                                                        onClick={() => selectRawIngredient(index, ri)}
-                                                                        className="px-3 py-2 hover:bg-zinc-800 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group"
-                                                                    >
-                                                                        <span>{ri.name}</span>
-                                                                        <span className="text-xs text-zinc-500 font-mono group-hover:text-zinc-400">
-                                                                            {ri.price.toFixed(2)}₺/{ri.unit}
-                                                                        </span>
+                                                    {showSuggestions && activeSearchIndex === index && !isIngredientLinked(item) && (
+                                                        <div ref={searchRef} className="absolute left-0 top-full mt-1 w-72 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-64 overflow-y-auto">
+                                                            {/* Intermediate Products Section */}
+                                                            {filteredIntermediateProducts.length > 0 && (
+                                                                <>
+                                                                    <div className="px-3 py-1.5 bg-orange-500/10 border-b border-zinc-700 text-[10px] font-semibold text-orange-400 uppercase tracking-wider">
+                                                                        Ara Ürünler
                                                                     </div>
-                                                                ))
-                                                            ) : (
+                                                                    {filteredIntermediateProducts.map(ip => (
+                                                                        <div
+                                                                            key={ip.id}
+                                                                            onClick={() => selectIntermediateProduct(index, ip)}
+                                                                            className="px-3 py-2 hover:bg-orange-500/10 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group border-l-2 border-transparent hover:border-orange-500"
+                                                                        >
+                                                                            <span className="text-orange-300">{ip.name}</span>
+                                                                            <span className="text-xs text-orange-500/70 font-mono group-hover:text-orange-400">
+                                                                                {ip.costPerUnit.toFixed(2)}₺/{ip.productionUnit}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </>
+                                                            )}
+
+                                                            {/* Raw Ingredients Section */}
+                                                            {filteredRawIngredients.length > 0 && (
+                                                                <>
+                                                                    <div className="px-3 py-1.5 bg-indigo-500/10 border-b border-zinc-700 text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">
+                                                                        Hammaddeler
+                                                                    </div>
+                                                                    {filteredRawIngredients.map(ri => (
+                                                                        <div
+                                                                            key={ri.id}
+                                                                            onClick={() => selectRawIngredient(index, ri)}
+                                                                            className="px-3 py-2 hover:bg-indigo-500/10 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group border-l-2 border-transparent hover:border-indigo-500"
+                                                                        >
+                                                                            <span>{ri.name}</span>
+                                                                            <span className="text-xs text-zinc-500 font-mono group-hover:text-zinc-400">
+                                                                                {ri.price.toFixed(2)}₺/{ri.unit}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </>
+                                                            )}
+
+                                                            {/* No Results */}
+                                                            {filteredRawIngredients.length === 0 && filteredIntermediateProducts.length === 0 && (
                                                                 <div className="px-3 py-2 text-xs text-zinc-500">Sonuç bulunamadı</div>
                                                             )}
                                                         </div>
@@ -412,8 +473,8 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                     />
                                                 </td>
                                                 <td className="p-2">
-                                                    {item.rawIngredientId ? (
-                                                        <div className="text-zinc-400 text-sm px-1 py-1">{item.unit}</div>
+                                                    {isIngredientLinked(item) ? (
+                                                        <div className={`text-sm px-1 py-1 ${item.intermediateProductId ? 'text-orange-400' : 'text-zinc-400'}`}>{item.unit}</div>
                                                     ) : (
                                                         <select
                                                             value={item.unit}
@@ -429,8 +490,8 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                     )}
                                                 </td>
                                                 <td className="p-2">
-                                                    {item.rawIngredientId ? (
-                                                        <div className="text-zinc-400 font-mono text-sm px-1 opacity-70 cursor-not-allowed">
+                                                    {isIngredientLinked(item) ? (
+                                                        <div className={`font-mono text-sm px-1 opacity-70 cursor-not-allowed ${item.intermediateProductId ? 'text-orange-400' : 'text-zinc-400'}`}>
                                                             {item.price.toFixed(2)}
                                                         </div>
                                                     ) : (

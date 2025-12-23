@@ -5,7 +5,7 @@ import { CustomSelect } from '../components/CustomSelect';
 import { NumberInput } from '../components/NumberInput';
 import { TaxSummary } from '../components/TaxSummary';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, toTitleCase } from '../lib/utils';
 import type { SalesTarget, Expense } from '../types';
 
 export function TargetsView() {
@@ -281,6 +281,7 @@ export function TargetsView() {
                             </table>
                         </div>
 
+<<<<<<< HEAD
                         {/* Packaging Costs Section (Inline Entry) */}
                         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
                             <div className="flex justify-between items-center mb-4">
@@ -352,6 +353,81 @@ export function TargetsView() {
 
                                 {/* Inline Add Row */}
                                 <div className="flex items-center gap-2 bg-zinc-800/20 p-1 rounded-lg border border-zinc-800 border-dashed">
+=======
+                        <div className="space-y-1">
+                            {/* Existing Items */}
+                            {packagingCosts.map((item) => (
+                                <div key={item.id} className="flex items-center gap-3 bg-zinc-900 border border-zinc-800/50 p-1 rounded-lg group">
+                                    {editingPkgId === item.id ? (
+                                        <div className="flex-1 flex items-center gap-2">
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                value={editPkgName}
+                                                onChange={(e) => setEditPkgName(toTitleCase(e.target.value))}
+                                                onFocus={(e) => e.target.select()}
+                                                className="flex-1 bg-zinc-800 text-white px-2 py-0.5 rounded border border-indigo-500/50 outline-none text-xs"
+                                                onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
+                                            />
+                                            <input
+                                                type="number"
+                                                value={editPkgAmount}
+                                                onChange={(e) => setEditPkgAmount(e.target.value)}
+                                                onFocus={(e) => e.target.select()}
+                                                className="w-20 bg-zinc-800 text-white text-right px-2 py-0.5 rounded border border-indigo-500/50 outline-none font-mono text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                onKeyDown={(e) => e.key === 'Enter' && saveEditingPkg()}
+                                            />
+                                            <button
+                                                onClick={saveEditingPkg}
+                                                className="p-1 bg-green-900/50 text-green-400 hover:text-white rounded"
+                                            >
+                                                <Save size={14} />
+                                            </button>
+                                            <button
+                                                onClick={() => setEditingPkgId(null)}
+                                                className="p-1 text-zinc-500 hover:text-white rounded"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div
+                                                className="flex-1 flex items-center justify-between px-2 cursor-pointer hover:bg-zinc-800/50 rounded transition-colors"
+                                                onClick={() => startEditingPkg(item)}
+                                            >
+                                                <span className="text-zinc-300 font-medium text-xs">{item.name}</span>
+                                                <span className="font-mono text-orange-400 text-xs">-{formatCurrency(item.amount)}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    setDeletingId(item.id);
+                                                    setDeleteType('packaging');
+                                                }}
+                                                className="p-1 hover:bg-zinc-800 rounded text-zinc-600 hover:text-red-400 transition-colors"
+                                                title="Sil"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            ))}
+
+                            {/* Inline Add Row */}
+                            <div className="flex items-center gap-2 bg-zinc-800/20 p-1 rounded-lg border border-zinc-800 border-dashed">
+                                <input
+                                    ref={nameRef}
+                                    type="text"
+                                    value={newPkgName}
+                                    onChange={(e) => setNewPkgName(toTitleCase(e.target.value))}
+                                    placeholder="Yeni Malzeme (Örn: Paket)"
+                                    onFocus={(e) => e.target.select()}
+                                    className="flex-1 bg-transparent border-b border-zinc-700/50 focus:border-indigo-500 px-2 py-0.5 text-white placeholder-zinc-600 focus:outline-none transition-colors text-xs"
+                                    onKeyDown={(e) => e.key === 'Enter' && handleAddPackaging()}
+                                />
+                                <div className="relative w-20">
+>>>>>>> 4db218e (v1.2.3: Intermediate products, package-based pricing, auto-capitalize)
                                     <input
                                         ref={nameRef}
                                         type="text"
