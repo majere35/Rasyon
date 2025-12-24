@@ -37,3 +37,13 @@ export function toTitleCase(str: string): string {
         .map(word => word.length > 0 ? word.charAt(0).toUpperCase() + word.slice(1) : '')
         .join(' ');
 }
+
+/**
+ * Calculate VAT-exclusive (net) price from VAT-inclusive price
+ * @param priceIncludingVat - The customer-facing price (KDV Dahil)
+ * @param vatRate - VAT rate as decimal (default 0.10 for restaurant sales = 10%)
+ * @returns Net price (KDV Hariç)
+ */
+export function getNetPrice(priceIncludingVat: number, vatRate: number = 0.10): number {
+    return priceIncludingVat / (1 + vatRate);
+}

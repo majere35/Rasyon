@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Trash2, TrendingUp, Calendar, Plus, X, Building2, Factory, Truck, Users, PenLine } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, getNetPrice } from '../lib/utils';
 import { NumberInput } from '../components/NumberInput';
 import { TaxSummary } from '../components/TaxSummary';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -92,11 +92,13 @@ export function BalanceView() {
     };
 
     // --- Core Calculations ---
+    // Revenue uses NET prices (KDV Hariç) since calculatedPrice is KDV Dahil
     const totalDailyRevenue = salesTargets.reduce((sum, target) => {
         const recipe = recipes.find(r => r.id === target.recipeId);
         if (!recipe) return sum;
         const totalQty = (target.dailyTarget || 0) + (target.packageDailyTarget || 0);
-        return sum + (recipe.calculatedPrice * totalQty);
+        const netPrice = getNetPrice(recipe.calculatedPrice);
+        return sum + (netPrice * totalQty);
     }, 0);
     const monthlyRevenue = totalDailyRevenue * daysWorkedInMonth;
 

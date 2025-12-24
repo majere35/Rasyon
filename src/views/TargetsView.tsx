@@ -5,7 +5,7 @@ import { CustomSelect } from '../components/CustomSelect';
 import { NumberInput } from '../components/NumberInput';
 import { TaxSummary } from '../components/TaxSummary';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { formatCurrency, toTitleCase } from '../lib/utils';
+import { formatCurrency, toTitleCase, getNetPrice } from '../lib/utils';
 import type { SalesTarget, Expense } from '../types';
 
 export function TargetsView() {
@@ -34,8 +34,10 @@ export function TargetsView() {
         const restQty = target.dailyTarget || 0;
         const pkgQty = target.packageDailyTarget || 0;
 
-        const restRevenue = recipe.calculatedPrice * restQty;
-        const pkgRevenue = recipe.calculatedPrice * pkgQty;
+        // Use net prices (KDV Hariç) for revenue calculations
+        const netPrice = getNetPrice(recipe.calculatedPrice);
+        const restRevenue = netPrice * restQty;
+        const pkgRevenue = netPrice * pkgQty;
 
         return sum + restRevenue + pkgRevenue;
     }, 0);
@@ -167,14 +169,14 @@ export function TargetsView() {
                             <thead className="bg-zinc-900/50 text-zinc-400 font-medium border-b border-zinc-800">
                                 <tr>
                                     {/* Optimization: Fixed widths using precise percentages to sum to ~100% */}
-                                    <th className="px-4 py-2 w-[30%]">Ürün Adı</th>
+                                    <th className="px-4 py-2 w-[28%]">Ürün Adı</th>
                                     <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[10%]">Brm. Mal.</th>
                                     <th className="px-1 py-2 text-center whitespace-nowrap text-xs w-[10%]">Rest. Adet</th>
                                     <th className="px-1 py-2 text-center whitespace-nowrap text-xs w-[8%]">Pkt. Adet</th>
-                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[12%]">Topl. Mal.</th>
-                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[9%]">Brm. Fiyat</th>
-                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[12%]">Ciro</th>
-                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[5%]">Mal. %</th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[11%]">Topl. Mal.</th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[11%]" title="KDV Dahil Birim Fiyatı">Fiyat<span className="text-[8px] text-green-500/50 ml-0.5">(KDV+)</span></th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[12%]" title="KDV Hariç Net Ciro">Net Ciro</th>
+                                    <th className="px-1 py-2 text-right whitespace-nowrap text-xs w-[6%]">Mal. %</th>
                                     <th className="px-1 py-2 w-[4%]"></th>
                                 </tr>
                             </thead>
@@ -189,10 +191,10 @@ export function TargetsView() {
 
 
                                     const totalCost = recipe.totalCost * totalQty;
-                                    const totalRevenue = recipe.calculatedPrice * totalQty;
+                                    const netPrice = getNetPrice(recipe.calculatedPrice);
+                                    const totalRevenue = netPrice * totalQty;
 
-                                    // Cost % for this line (Ingredient cost only usually, or should we include pkg?)
-                                    // Standard practice: Line item cost % usually just ingredients vs price. 
+                                    // Cost % for this line (Ingredient cost vs NET price)
                                     const costPercent = totalRevenue > 0 ? (totalCost / totalRevenue) * 100 : 0;
 
                                     return (

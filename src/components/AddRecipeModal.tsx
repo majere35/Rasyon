@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, Save, Upload, Image as ImageIcon, Link, Copy } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { NumberInput } from './NumberInput';
-import { toTitleCase } from '../lib/utils';
+import { toTitleCase, getNetPrice, formatCurrency } from '../lib/utils';
 import type { Recipe, Ingredient } from '../types';
 
 interface AddRecipeModalProps {
@@ -313,7 +313,10 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
 
                                 <div className="pt-2">
                                     <div className="flex justify-between items-center mb-1">
-                                        <span className="text-xs text-zinc-500">Hesaplanan Satış Fiyatı</span>
+                                        <div>
+                                            <span className="text-xs text-zinc-500">Satış Fiyatı</span>
+                                            <span className="text-[10px] text-green-500/70 ml-1">(KDV Dahil)</span>
+                                        </div>
                                         <div className="relative group">
                                             <input
                                                 type="text"
@@ -338,10 +341,16 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                             <span className="text-xl font-bold text-green-400 font-mono ml-1">₺</span>
                                         </div>
                                     </div>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <span className="text-[10px] text-zinc-600">Net Fiyat (KDV Hariç)</span>
+                                        <span className="text-xs text-zinc-400 font-mono">
+                                            {formatCurrency(getNetPrice(calculatedPrice))}
+                                        </span>
+                                    </div>
                                     <div className="flex justify-between items-center mt-2">
                                         <span className="text-xs text-zinc-500">Kâr Oranı</span>
                                         <span className="text-xs text-indigo-400 font-medium bg-indigo-500/10 px-2 py-0.5 rounded">
-                                            %{((calculatedPrice - totalCost) / calculatedPrice * 100 || 0).toFixed(1)}
+                                            %{((getNetPrice(calculatedPrice) - totalCost) / getNetPrice(calculatedPrice) * 100 || 0).toFixed(1)}
                                         </span>
                                     </div>
                                 </div>

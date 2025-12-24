@@ -1,5 +1,5 @@
 import { Trash2, Edit2, TrendingUp } from 'lucide-react';
-import { formatCurrency, formatNumber } from '../lib/utils';
+import { formatCurrency, formatNumber, getNetPrice } from '../lib/utils';
 import type { Recipe } from '../types';
 
 interface RecipeCardProps {
@@ -9,8 +9,9 @@ interface RecipeCardProps {
 }
 
 export function RecipeCard({ recipe, onEdit, onDelete }: RecipeCardProps) {
-    const profitMargin = recipe.calculatedPrice > 0
-        ? ((recipe.calculatedPrice - recipe.totalCost) / recipe.calculatedPrice * 100).toFixed(1)
+    const netPrice = getNetPrice(recipe.calculatedPrice);
+    const profitMargin = netPrice > 0
+        ? ((netPrice - recipe.totalCost) / netPrice * 100).toFixed(1)
         : 0;
 
     const handleDelete = () => {
@@ -69,8 +70,14 @@ export function RecipeCard({ recipe, onEdit, onDelete }: RecipeCardProps) {
                     </div>
 
                     <div className="flex justify-between items-center text-xs border-t border-zinc-700/50 pt-2">
-                        <span className="text-zinc-500">Satış</span>
-                        <span className="font-mono text-green-400 font-bold">{formatCurrency(recipe.calculatedPrice)}</span>
+                        <div>
+                            <span className="text-zinc-500">Satış</span>
+                            <span className="text-[9px] text-green-500/60 ml-0.5">(KDV Dahil)</span>
+                        </div>
+                        <div className="text-right">
+                            <span className="font-mono text-green-400 font-bold">{formatCurrency(recipe.calculatedPrice)}</span>
+                            <div className="text-[9px] text-zinc-500 font-mono">Net: {formatCurrency(netPrice)}</div>
+                        </div>
                     </div>
                 </div>
             </div>
