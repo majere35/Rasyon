@@ -16,6 +16,10 @@ export const useStore = create<AppState>()(
             user: null,
             setUser: (user) => set({ user }),
 
+            // Financial Settings
+            onlineCommissionRate: 10, // Default 10%
+            setOnlineCommissionRate: (rate: number) => set({ onlineCommissionRate: rate }),
+
             recipes: [],
             salesTargets: [],
             expenses: [],
@@ -294,6 +298,7 @@ export const useStore = create<AppState>()(
                 ingredientCategories: state.ingredientCategories,
                 intermediateProducts: state.intermediateProducts,
                 monthlyClosings: state.monthlyClosings, // Persist monthly data
+                onlineCommissionRate: state.onlineCommissionRate, // Persist commission rate
             }),
         }
     )

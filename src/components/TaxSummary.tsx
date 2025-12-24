@@ -1,54 +1,28 @@
 import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
+import { calculateIncomeTax, calculateVatStatus } from '../utils/taxUtils';
+import { appConfig } from '../config/appConfig';
 
 interface TaxSummaryProps {
     profit: number;
     revenue: number;
     expensesVat: number;
+    carryInVat?: number;
     stopaj?: number;
     title?: string;
 }
 
-export function TaxSummary({ profit, revenue, expensesVat, stopaj = 0, title }: TaxSummaryProps) {
+export function TaxSummary({ profit, revenue, expensesVat, carryInVat = 0, stopaj = 0, title }: TaxSummaryProps) {
     const { company } = useStore();
-
-    // 2025 Turkish Tax Brackets for Sole Proprietorship (Şahıs)
-    const calculateIncomeTax = (annualProfit: number) => {
-        // Zarar varsa gelir vergisi yok
-        if (annualProfit <= 0) return 0;
-
-        if (!company || company.type === 'limited') {
-            // Corporate Tax (Kurumlar Vergisi) - 25% on Profit
-            return Math.max(0, annualProfit) * 0.25;
-        }
-
-        // Progressive Tax for Şahıs
-        let tax = 0;
-        const income = annualProfit; // Annual Profit
-
-        if (income <= 158000) {
-            tax = income * 0.15;
-        } else if (income <= 330000) {
-            tax = 23700 + (income - 158000) * 0.20;
-        } else if (income <= 800000) {
-            tax = 58100 + (income - 330000) * 0.27;
-        } else if (income <= 4300000) {
-            tax = 185000 + (income - 800000) * 0.35;
-        } else {
-            tax = 1410000 + (income - 4300000) * 0.40;
-        }
-        return tax;
-    };
 
     const monthlyProfit = profit;
     const annualProfit = profit * 12;
-    const annualTax = calculateIncomeTax(annualProfit);
+    const annualTax = calculateIncomeTax(annualProfit, company?.type || 'sahis');
     const monthlyTax = annualTax / 12;
 
     // VAT (KDV)
-    const incomeVat = revenue * 0.10; // 10% on Revenue (Food Service Standard)
-    // expenseVat is passed in
-    const vatDiff = incomeVat - expensesVat;
+    const incomeVat = revenue * (appConfig.revenueVat.rate / 100);
+    const { payableVat, carryOverToNext } = calculateVatStatus(incomeVat, expensesVat, carryInVat);
 
     return (
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-5">
@@ -96,18 +70,33 @@ export function TaxSummary({ profit, revenue, expensesVat, stopaj = 0, title }: 
                     </div>
                     <div className="flex justify-between">
                         <span className="text-zinc-500">İndirilecek KDV (Giderler)</span>
-                        <span className="text-green-400 font-mono">-{formatCurrency(expensesVat)}</span>
+                        <span className="text-white font-mono">-{formatCurrency(expensesVat)}</span>
                     </div>
-                    <div className="w-full h-px bg-zinc-800/50 my-1"></div>
-                    <div className="flex justify-between items-end">
-                        <span className="text-zinc-300 font-medium">Ödenecek KDV Farkı</span>
-                        <div className={`font-mono font-bold ${vatDiff > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                            {vatDiff > 0 ? '-' : '+'}{formatCurrency(Math.abs(vatDiff))}
+                    {carryInVat > 0 && (
+                        <div className="flex justify-between text-indigo-400 font-medium">
+                            <span>Önceki Aydan Devreden KDV</span>
+                            <span className="font-mono">-{formatCurrency(carryInVat)}</span>
                         </div>
-                    </div>
+                    )}
+                    <div className="w-full h-px bg-zinc-800/50 my-1"></div>
+
+                    {payableVat > 0 ? (
+                        <div className="flex justify-between items-end">
+                            <span className="text-zinc-300 font-medium">Ödenecek KDV</span>
+                            <div className="font-mono font-bold text-red-400">
+                                -{formatCurrency(payableVat)}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex justify-between items-end">
+                            <span className="text-indigo-400 font-medium">Sonraki Aya Devreden KDV</span>
+                            <div className="font-mono font-bold text-green-400">
+                                +{formatCurrency(carryOverToNext)}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     );
 }
-

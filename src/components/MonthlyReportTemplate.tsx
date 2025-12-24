@@ -8,10 +8,11 @@ interface MonthlyReportTemplateProps {
     netProfit: number;
     netProfitAfterTax: number;
     totalTaxPayable: number;
+    carryInVat?: number;
     reportType: 'summary' | 'detailed';
 }
 
-export function MonthlyReportTemplate({ data, aggregatedData, netProfit, netProfitAfterTax, totalTaxPayable, reportType }: MonthlyReportTemplateProps) {
+export function MonthlyReportTemplate({ data, aggregatedData, netProfit, netProfitAfterTax, totalTaxPayable, carryInVat = 0, reportType }: MonthlyReportTemplateProps) {
     const today = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 
     // Format month string for display (e.g., "2025-12" -> "ARALIK 2025")
@@ -20,6 +21,13 @@ export function MonthlyReportTemplate({ data, aggregatedData, netProfit, netProf
         const date = new Date(Number(year), Number(month) - 1);
         return date.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' }).toLocaleUpperCase('tr-TR');
     };
+
+    // Calculate granular VAT for display
+    const incomeVat = aggregatedData.totalRevenue * 0.10;
+    const deductibleVat = aggregatedData.totalDeductibleVat;
+    const balance = incomeVat - deductibleVat - carryInVat;
+    const isCarryOverNext = balance < 0;
+    const payableVatAmount = isCarryOverNext ? 0 : balance;
 
     return (
         <div
@@ -39,7 +47,7 @@ export function MonthlyReportTemplate({ data, aggregatedData, netProfit, netProf
                 </div>
             </div>
 
-            {/* Executive Summary - All same style, no colored backgrounds */}
+            {/* Executive Summary */}
             <div className="grid grid-cols-3 gap-6 mb-10">
                 <div className="bg-gray-50 p-4 rounded border border-gray-300">
                     <p className="text-xs text-gray-600 font-bold mb-1">TOPLAM CİRO</p>
@@ -81,7 +89,6 @@ export function MonthlyReportTemplate({ data, aggregatedData, netProfit, netProf
                                                         <td className="py-2 px-3 text-gray-800 font-medium">{item.name}</td>
                                                         <td className="py-2 px-3 text-right font-mono font-bold text-gray-900">{formatCurrency(item.amount)}</td>
                                                     </tr>
-                                                    {/* Detailed Breakdown */}
                                                     {reportType === 'detailed' && item.details && item.details.length > 0 && (
                                                         <tr>
                                                             <td colSpan={2} className="px-3 pb-3 pt-0">
@@ -127,9 +134,25 @@ export function MonthlyReportTemplate({ data, aggregatedData, netProfit, netProf
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                         <tr>
-                            <td className="py-2 px-4">Ödenecek KDV</td>
-                            <td className="py-2 px-4 text-right font-mono">
-                                {formatCurrency(Math.max(0, (aggregatedData.totalRevenue * 0.10) - aggregatedData.totalDeductibleVat))}
+                            <td className="py-2 px-4">Hesaplanan KDV (Gelir %10)</td>
+                            <td className="py-2 px-4 text-right font-mono">{formatCurrency(incomeVat)}</td>
+                        </tr>
+                        <tr>
+                            <td className="py-2 px-4">İndirilecek KDV (Giderler)</td>
+                            <td className="py-2 px-4 text-right font-mono">-{formatCurrency(deductibleVat)}</td>
+                        </tr>
+                        {carryInVat > 0 && (
+                            <tr>
+                                <td className="py-2 px-4">Önceki Aydan Devreden KDV</td>
+                                <td className="py-2 px-4 text-right font-mono">-{formatCurrency(carryInVat)}</td>
+                            </tr>
+                        )}
+                        <tr className="bg-gray-50">
+                            <td className="py-2 px-4 font-bold">
+                                {isCarryOverNext ? 'Sonraki Aya Devreden KDV' : 'Ödenecek KDV Durumu'}
+                            </td>
+                            <td className={`py-2 px-4 text-right font-mono font-bold ${isCarryOverNext ? 'text-indigo-600' : ''}`}>
+                                {isCarryOverNext ? `+${formatCurrency(Math.abs(balance))}` : `-${formatCurrency(payableVatAmount)}`}
                             </td>
                         </tr>
                         <tr>
@@ -139,7 +162,7 @@ export function MonthlyReportTemplate({ data, aggregatedData, netProfit, netProf
                         <tr>
                             <td className="py-2 px-4">Tahmini Gelir Vergisi (Aylık)</td>
                             <td className="py-2 px-4 text-right font-mono">
-                                {formatCurrency(totalTaxPayable - Math.max(0, (aggregatedData.totalRevenue * 0.10) - aggregatedData.totalDeductibleVat) - aggregatedData.totalStopajTax)}
+                                {formatCurrency(totalTaxPayable - payableVatAmount - aggregatedData.totalStopajTax)}
                             </td>
                         </tr>
                         <tr className="bg-gray-100 font-bold">

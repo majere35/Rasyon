@@ -10,10 +10,11 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-    const { theme, toggleTheme } = useStore();
+    const { theme, toggleTheme, onlineCommissionRate, setOnlineCommissionRate } = useStore();
     const [subModal, setSubModal] = useState<'instructions' | 'release' | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncMsg, setSyncMsg] = useState('');
+    const [commissionInput, setCommissionInput] = useState(onlineCommissionRate.toString());
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -29,6 +30,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             rawIngredients: state.rawIngredients,
             ingredientCategories: state.ingredientCategories,
             monthlyClosings: state.monthlyClosings,
+            onlineCommissionRate: state.onlineCommissionRate, // Include commission rate
             theme: state.theme,
             exportDate: new Date().toISOString(),
             version: APP_VERSION
@@ -80,6 +82,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     rawIngredients: data.rawIngredients || [],
                     ingredientCategories: data.ingredientCategories || [],
                     monthlyClosings: data.monthlyClosings || [],
+                    onlineCommissionRate: data.onlineCommissionRate || 10, // Restore commission rate
                     theme: data.theme || 'dark'
                 });
 
@@ -95,6 +98,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             }
         };
         reader.readAsText(file);
+    };
+
+    const handleCommissionChange = (value: string) => {
+        setCommissionInput(value);
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+            setOnlineCommissionRate(numValue);
+        }
     };
 
     if (!isOpen) return null;
@@ -126,6 +137,29 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             >
                                 <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${theme === 'dark' ? 'translate-x-6' : ''}`}></div>
                             </button>
+                        </div>
+
+                        {/* Commission Rate Setting */}
+                        <div className="p-4 bg-zinc-100 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                                <div>
+                                    <div className="font-medium text-zinc-900 dark:text-white">Online Satış Komisyonu</div>
+                                    <div className="text-xs text-zinc-500">Yemeksepeti, Getir vb. için</div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-3">
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.1"
+                                    value={commissionInput}
+                                    onChange={(e) => handleCommissionChange(e.target.value)}
+                                    className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <span className="text-zinc-600 dark:text-zinc-400 font-medium">%</span>
+                            </div>
+                            <div className="text-[10px] text-zinc-500 mt-1">Varsayılan: 10%</div>
                         </div>
 
                         {/* Backup Controls */}

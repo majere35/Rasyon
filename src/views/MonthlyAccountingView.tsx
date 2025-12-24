@@ -8,7 +8,9 @@ import { MonthlyBalanceTab } from '../components/MonthlyBalanceTab';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { expenseCategoryOptions, getCategoryLabel } from '../data/expenseCategories';
 import { MonthlyReportTemplate } from '../components/MonthlyReportTemplate';
-import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, History, Check, X, Printer } from 'lucide-react';
+import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, ChevronLeft, ChevronRight, Calendar, Check, X, Printer } from 'lucide-react';
+import { calculateIncomeTax, getAvailableVatCarryOver, calculateVatStatus } from '../utils/taxUtils';
+import { appConfig } from '../config/appConfig';
 
 // Basic formatter
 const formatCurrency = (amount: number) => {
@@ -359,7 +361,7 @@ export const MonthlyAccountingView = () => {
 
 // Print Preview Modal with Report Template
 const PrintPreviewModal = ({ data, reportType, onClose, onPrint }: { data: MonthlyMonthData, reportType: 'summary' | 'detailed', onClose: () => void, onPrint: () => void }) => {
-    const { company } = useStore();
+    const { monthlyClosings, company, onlineCommissionRate } = useStore();
 
     // Calculate aggregated data (same logic as MonthlyBalanceTab)
     const aggregatedData = useMemo(() => {
@@ -369,8 +371,8 @@ const PrintPreviewModal = ({ data, reportType, onClose, onPrint }: { data: Month
         const totalOnlineSales = dailySales.reduce((sum, sale) => {
             return sum + (sale.yemeksepeti || 0) + (sale.trendyol || 0) + (sale.getirYemek || 0) + (sale.migrosYemek || 0);
         }, 0);
-        const commissionCost = totalOnlineSales * 0.10;
-        const commissionVat = commissionCost * 0.20;
+        const commissionCost = totalOnlineSales * (onlineCommissionRate / 100);
+        const commissionVat = commissionCost * (appConfig.commissionVat.rate / 100);
 
         // Initialize sums and details
         const sums: Record<string, number> = {
@@ -463,7 +465,7 @@ const PrintPreviewModal = ({ data, reportType, onClose, onPrint }: { data: Month
                 {
                     id: 'sales', title: 'SATIŞ & DAĞITIM',
                     items: [
-                        { name: 'Online Satış Komisyonları', amount: commissionCost, isAuto: true, note: '%10' },
+                        { name: 'Online Satış Komisyonları', amount: commissionCost, isAuto: true, note: `%${onlineCommissionRate}` },
                         { name: 'Reklam Giderleri', amount: sums.marketing, details: details.marketing },
                         { name: 'Kurye Masrafı', amount: sums.courier, details: details.courier }
                     ]
@@ -478,7 +480,7 @@ const PrintPreviewModal = ({ data, reportType, onClose, onPrint }: { data: Month
                 }
             ]
         };
-    }, [data]);
+    }, [data, onlineCommissionRate]);
 
     const totalExpenses = aggregatedData.groups.reduce((sum: number, group: { items: { amount: number }[] }) => {
         return sum + group.items.reduce((gSum: number, item: { amount: number }) => gSum + item.amount, 0);
@@ -486,28 +488,24 @@ const PrintPreviewModal = ({ data, reportType, onClose, onPrint }: { data: Month
 
     const netProfit = aggregatedData.totalRevenue - totalExpenses;
 
-    const calculateIncomeTax = (annualProfit: number) => {
-        if (annualProfit <= 0) return 0;
-        if (!company || company.type === 'limited') {
-            return Math.max(0, annualProfit) * 0.25;
-        }
-        let tax = 0;
-        const income = annualProfit;
-        if (income <= 158000) tax = income * 0.15;
-        else if (income <= 330000) tax = 23700 + (income - 158000) * 0.20;
-        else if (income <= 800000) tax = 58100 + (income - 330000) * 0.27;
-        else if (income <= 4300000) tax = 185000 + (income - 800000) * 0.35;
-        else tax = 1410000 + (income - 4300000) * 0.40;
-        return tax;
-    };
+    // Calculate Taxes & VAT Carry-Over
+    const carryInVat = getAvailableVatCarryOver(
+        data.monthStr,
+        monthlyClosings,
+        onlineCommissionRate,
+        appConfig.revenueVat.rate,
+        appConfig.commissionVat.rate
+    );
 
-    const incomeVat = aggregatedData.totalRevenue * 0.10;
-    const payableVat = Math.max(0, incomeVat - aggregatedData.totalDeductibleVat);
+    const incomeVat = aggregatedData.totalRevenue * (appConfig.revenueVat.rate / 100);
+    const { payableVat } = calculateVatStatus(incomeVat, aggregatedData.totalDeductibleVat, carryInVat);
+
     const annualProfit = netProfit * 12;
-    const annualTax = calculateIncomeTax(annualProfit);
+    const annualTax = calculateIncomeTax(annualProfit, company?.type || 'sahis');
     const monthlyTax = annualTax / 12;
     const totalTaxPayable = monthlyTax + payableVat + aggregatedData.totalStopajTax;
     const netProfitAfterTax = netProfit - totalTaxPayable;
+
 
     return (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 overflow-auto">
@@ -541,6 +539,7 @@ const PrintPreviewModal = ({ data, reportType, onClose, onPrint }: { data: Month
                         netProfit={netProfit}
                         netProfitAfterTax={netProfitAfterTax}
                         totalTaxPayable={totalTaxPayable}
+                        carryInVat={carryInVat}
                         reportType={reportType}
                     />
                 </div>
@@ -1052,16 +1051,41 @@ const SalesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, isRe
     );
 };
 
-// Custom Month Selector Component (Styled to match CustomSelect)
+// Modern Month Selector Component
 const MonthSelector = ({ selectedMonth, onChange, closings }: { selectedMonth: string, onChange: (m: string) => void, closings: MonthlyMonthData[] }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [viewYear, setViewYear] = useState(Number(selectedMonth.split('-')[0]));
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Generate easy text for month
-    const getMonthText = (m: string) => {
-        const [y, mo] = m.split('-');
-        const date = new Date(Number(y), Number(mo) - 1);
-        return date.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' });
+    const months = [
+        'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+        'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+
+    const handlePrevMonth = () => {
+        let [y, m] = selectedMonth.split('-').map(Number);
+        m--;
+        if (m === 0) {
+            m = 12;
+            y--;
+        }
+        onChange(`${y}-${String(m).padStart(2, '0')}`);
+    };
+
+    const handleNextMonth = () => {
+        let [y, m] = selectedMonth.split('-').map(Number);
+        m++;
+        if (m === 13) {
+            m = 1;
+            y++;
+        }
+        onChange(`${y}-${String(m).padStart(2, '0')}`);
+    };
+
+
+    const isMonthClosed = (year: number, monthIdx: number) => {
+        const mStr = `${year}-${String(monthIdx + 1).padStart(2, '0')}`;
+        return closings.find(c => c.monthStr === mStr)?.isClosed;
     };
 
     // Close on click outside
@@ -1075,62 +1099,132 @@ const MonthSelector = ({ selectedMonth, onChange, closings }: { selectedMonth: s
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
 
+    const displayMonth = months[Number(selectedMonth.split('-')[1]) - 1];
+    const displayYear = selectedMonth.split('-')[0];
+
     return (
-        <div className="relative" ref={containerRef}>
-            {/* Trigger Button - Matches CustomSelect style */}
-            <div
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between gap-3 px-3 py-2 bg-white dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700 rounded-lg cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors shadow-sm min-w-[200px]"
+        <div className="flex items-center gap-2" ref={containerRef}>
+            {/* Quick Navigation - Prev */}
+            <button
+                onClick={handlePrevMonth}
+                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
+                title="Önceki Ay"
             >
-                <div>
-                    <span className="block text-[10px] text-zinc-500 text-left uppercase tracking-wider font-semibold">SEÇİLİ DÖNEM</span>
-                    <span className="font-medium text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        {getMonthText(selectedMonth)}
-                    </span>
+                <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            {/* Main Selector Card */}
+            <div className="relative">
+                <div
+                    onClick={() => setIsOpen(!isOpen)}
+                    className={`
+                        flex items-center gap-4 px-5 py-2.5 
+                        bg-white dark:bg-zinc-900 border 
+                        ${isOpen ? 'border-indigo-500 ring-4 ring-indigo-500/10 shadow-lg' : 'border-zinc-200 dark:border-zinc-800 shadow-sm'}
+                        rounded-xl cursor-pointer hover:border-indigo-400 dark:hover:border-zinc-700 
+                        transition-all duration-300 min-w-[220px] group
+                    `}
+                >
+                    <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                        <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div className="flex-1">
+                        <span className="block text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase tracking-widest mb-0.5">DÖNEM</span>
+                        <div className="flex items-center justify-between">
+                            <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                                {displayMonth} {displayYear}
+                            </span>
+                            <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                    </div>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+
+                {/* Dropdown Grid */}
+                {isOpen && (
+                    <div className="absolute right-0 top-full mt-3 w-[320px] bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        {/* Year Header */}
+                        <div className="bg-zinc-50 dark:bg-zinc-900/50 p-4 flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800">
+                            <button
+                                onClick={() => setViewYear(v => v - 1)}
+                                className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors"
+                            >
+                                <ChevronLeft className="w-4 h-4 text-zinc-500" />
+                            </button>
+                            <span className="text-lg font-black text-zinc-900 dark:text-zinc-100 tracking-tight">
+                                {viewYear}
+                            </span>
+                            <button
+                                onClick={() => setViewYear(v => v + 1)}
+                                className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md transition-colors"
+                            >
+                                <ChevronRight className="w-4 h-4 text-zinc-500" />
+                            </button>
+                        </div>
+
+                        {/* Month Grid */}
+                        <div className="p-3 grid grid-cols-3 gap-2">
+                            {months.map((m, idx) => {
+                                const mStr = `${viewYear}-${String(idx + 1).padStart(2, '0')}`;
+                                const isSelected = selectedMonth === mStr;
+                                const isClosed = isMonthClosed(viewYear, idx);
+
+                                return (
+                                    <button
+                                        key={idx}
+                                        onClick={() => {
+                                            onChange(mStr);
+                                            setIsOpen(false);
+                                        }}
+                                        className={`
+                                            relative py-3 px-2 rounded-xl text-sm font-semibold transition-all duration-200
+                                            flex flex-col items-center justify-center gap-1
+                                            ${isSelected
+                                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 scale-105 z-10'
+                                                : 'hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400'}
+                                        `}
+                                    >
+                                        {m}
+                                        {isClosed && (
+                                            <div className={`absolute top-1 right-1 w-2 h-2 rounded-full ${isSelected ? 'bg-white' : 'bg-green-500'} shadow-sm`} />
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Footer Info */}
+                        <div className="p-3 bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500" />
+                                <span className="text-[10px] font-bold text-zinc-500 uppercase">KAPALI DÖNEM</span>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const now = new Date();
+                                    onChange(now.toISOString().slice(0, 7));
+                                    setViewYear(now.getFullYear());
+                                    setIsOpen(false);
+                                }}
+                                className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest hover:underline"
+                            >
+                                BUGÜNÜ SEÇ
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-zinc-900 rounded-lg shadow-xl border border-zinc-200 dark:border-zinc-700 z-50 p-2 animate-in fade-in zoom-in-95 duration-100">
-                    <div className="p-2 border-b border-zinc-100 dark:border-zinc-800 mb-2">
-                        <label className="text-xs text-zinc-500 mb-1 block">Farklı Bir Ay Seç</label>
-                        <input
-                            type="month"
-                            value={selectedMonth}
-                            onChange={(e) => { onChange(e.target.value); setIsOpen(false); }}
-                            className="w-full p-2 rounded bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm border border-zinc-200 dark:border-zinc-700 focus:ring-2 focus:ring-indigo-500 dark:[color-scheme:dark] dark:[&::-webkit-calendar-picker-indicator]:invert"
-                        />
-                    </div>
-
-                    <div className="max-h-60 overflow-y-auto">
-                        <p className="text-xs font-medium text-zinc-400 px-2 py-1">GEÇMİŞ RAPORLAR</p>
-                        {closings.length === 0 && <p className="text-sm text-zinc-500 px-2">Henüz kapatılmış dönem yok.</p>}
-                        {closings
-                            .sort((a, b) => b.monthStr.localeCompare(a.monthStr))
-                            .map(m => (
-                                <button
-                                    key={m.id}
-                                    onClick={() => { onChange(m.monthStr); setIsOpen(false); }}
-                                    className={`w-full text-left p-2 rounded-lg flex items-center justify-between group hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ${selectedMonth === m.monthStr ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg ${m.isClosed ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                                            {m.isClosed ? <CheckCircle className="w-4 h-4" /> : <History className="w-4 h-4" />}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{getMonthText(m.monthStr)}</p>
-                                            <p className="text-xs text-zinc-500">{m.isClosed ? 'Kapanış Yapıldı' : 'Aktif'}</p>
-                                        </div>
-                                    </div>
-                                    {selectedMonth === m.monthStr && <Check className="w-4 h-4 text-indigo-600" />}
-                                </button>
-                            ))}
-                    </div>
-                </div>
-            )}
+            {/* Quick Navigation - Next */}
+            <button
+                onClick={handleNextMonth}
+                className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg text-zinc-500 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700"
+                title="Sonraki Ay"
+            >
+                <ChevronRight className="w-5 h-5" />
+            </button>
         </div>
     );
 };
+
 
 

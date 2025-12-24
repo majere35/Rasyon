@@ -88,6 +88,10 @@ export interface AppState {
     user: any | null; // Using any for Firebase User to avoid complex type deps for now
     setUser: (user: any | null) => void;
 
+    // Financial Settings
+    onlineCommissionRate: number; // Default 10 (%)
+    setOnlineCommissionRate: (rate: number) => void;
+
     recipes: Recipe[];
     salesTargets: SalesTarget[];
     expenses: Expense[];
