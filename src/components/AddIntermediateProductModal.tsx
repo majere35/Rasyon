@@ -91,9 +91,36 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
         ? rawIngredients.filter(ri => ri.name.toLowerCase().includes(searchQuery.toLowerCase()))
         : rawIngredients;
 
+    const calculateTotalQuantity = () => {
+        return ingredients.reduce((sum, item) => {
+            let qty = item.quantity || 0;
+            // Convert to production unit if needed
+            if (productionUnit === 'kg' && item.unit === 'gr') {
+                qty = qty / 1000;
+            } else if (productionUnit === 'lt' && item.unit === 'cl') {
+                qty = qty / 100;
+            } else if (productionUnit === 'kg' && item.unit === 'lt') {
+                // assume 1lt = 1kg for kitchen math if not specified
+                qty = qty;
+            } else if (productionUnit === 'lt' && item.unit === 'kg') {
+                qty = qty;
+            }
+            return sum + qty;
+        }, 0);
+    };
+
+    // Auto-sync production quantity when ingredients or unit changes
     const calculateTotalCost = () => {
         return ingredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
     };
+
+    // Auto-sync production quantity when ingredients or unit changes
+    useEffect(() => {
+        const totalQty = calculateTotalQuantity();
+        if (totalQty > 0) {
+            setProductionQuantity(totalQty);
+        }
+    }, [ingredients, productionUnit]);
 
     const totalCost = calculateTotalCost();
     const costPerUnit = productionQuantity > 0 ? totalCost / productionQuantity : 0;
@@ -162,14 +189,18 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
 
                             {/* Production Quantity */}
                             <div className="space-y-1">
-                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Üretim Miktarı</label>
+                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex justify-between">
+                                    <span>Üretim Miktarı</span>
+                                    <span className="text-[10px] text-orange-500/70 lowercase normal-case">Otomatik Hesaplanır</span>
+                                </label>
                                 <div className="flex gap-2">
                                     <NumberInput
                                         value={productionQuantity}
                                         onChange={(val) => setProductionQuantity(val)}
-                                        className="flex-1"
+                                        className="flex-1 bg-zinc-900/50 border-zinc-800 text-zinc-400"
                                         placeholder="5"
-                                        step={0.1}
+                                        step={0.001}
+                                        readOnly={true}
                                     />
                                     <select
                                         value={productionUnit}
@@ -181,8 +212,8 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
                                         <option value="adet">Adet</option>
                                     </select>
                                 </div>
-                                <p className="text-xs text-zinc-600 mt-1">
-                                    Bu reçeteyle ne kadar ara ürün üretildiğini belirtin
+                                <p className="text-[10px] text-zinc-600 mt-1">
+                                    Listeye malzeme ekledikçe toplam miktar güncellenir
                                 </p>
                             </div>
 

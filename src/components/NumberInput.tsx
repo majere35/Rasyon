@@ -8,10 +8,23 @@ interface NumberInputProps {
     step?: number;
     className?: string;
     placeholder?: string;
-    description?: string; // Optional unit or description like 'adet', 'kg'
+    description?: string;
+    readOnly?: boolean;
+    disabled?: boolean;
 }
 
-export function NumberInput({ value, onChange, min = 0, max, step = 1, className = '', placeholder, description }: NumberInputProps) {
+export function NumberInput({
+    value,
+    onChange,
+    min = 0,
+    max,
+    step = 1,
+    className = '',
+    placeholder,
+    description,
+    readOnly = false,
+    disabled = false
+}: NumberInputProps) {
     // Local state to handle the input string, allowing for "0," or "0." intermediate states
     const [localValue, setLocalValue] = useState(value?.toString() || '');
 
@@ -114,7 +127,7 @@ export function NumberInput({ value, onChange, min = 0, max, step = 1, className
     };
 
     return (
-        <div className={`relative flex items-center bg-zinc-800 rounded-lg group focus-within:ring-1 focus-within:ring-indigo-500 transition-all ${className}`}>
+        <div className={`relative flex items-center bg-zinc-800 rounded-lg group focus-within:ring-1 focus-within:ring-indigo-500 transition-all ${disabled || readOnly ? 'opacity-70 grayscale-[0.5]' : ''} ${className}`}>
             <input
                 ref={inputRef}
                 type="text"
@@ -124,7 +137,9 @@ export function NumberInput({ value, onChange, min = 0, max, step = 1, className
                 onBlur={handleBlur}
                 onFocus={(e) => e.target.select()}
                 placeholder={placeholder}
-                className="w-full bg-transparent border-none text-white px-2 py-1.5 focus:ring-0 focus:outline-none appearance-none font-mono text-center tracking-tight"
+                readOnly={readOnly}
+                disabled={disabled}
+                className={`w-full bg-transparent border-none text-white px-2 py-1.5 focus:ring-0 focus:outline-none appearance-none font-mono text-center tracking-tight ${disabled || readOnly ? 'cursor-not-allowed' : ''}`}
             />
 
             {description && (
