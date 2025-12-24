@@ -18,6 +18,8 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
     const [ingredients, setIngredients] = useState<Omit<Ingredient, 'id'>[]>([]);
     const [productionQuantity, setProductionQuantity] = useState(1);
     const [productionUnit, setProductionUnit] = useState<'kg' | 'lt' | 'adet'>('kg');
+    const [portionWeight, setPortionWeight] = useState<number | undefined>(undefined);
+    const [portionUnit, setPortionUnit] = useState<'gr' | 'cl'>('gr');
 
     // Autocomplete state
     const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
@@ -44,11 +46,15 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
             setIngredients(editProduct.ingredients);
             setProductionQuantity(editProduct.productionQuantity);
             setProductionUnit(editProduct.productionUnit);
+            setPortionWeight(editProduct.portionWeight);
+            setPortionUnit(editProduct.portionUnit || (editProduct.productionUnit === 'lt' ? 'cl' : 'gr'));
         } else {
             setName('');
             setIngredients([{ name: '', quantity: 0, unit: 'kg', price: 0 }]);
             setProductionQuantity(1);
             setProductionUnit('kg');
+            setPortionWeight(undefined);
+            setPortionUnit('gr');
         }
     }, [editProduct, isOpen]);
 
@@ -157,7 +163,9 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
             totalCost,
             productionQuantity,
             productionUnit,
-            costPerUnit
+            costPerUnit,
+            portionWeight: productionUnit !== 'adet' ? portionWeight : undefined,
+            portionUnit: productionUnit !== 'adet' ? portionUnit : undefined
         };
 
         if (editProduct) {
@@ -238,6 +246,40 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
                                     Listeye malzeme ekledikçe toplam miktar güncellenir
                                 </p>
                             </div>
+
+                            {/* Portioning Section */}
+                            {productionUnit !== 'adet' && (
+                                <div className="space-y-1 bg-orange-500/5 border border-orange-500/10 rounded-lg p-3">
+                                    <label className="text-xs font-semibold text-orange-500/80 uppercase tracking-wider flex justify-between">
+                                        <span>Porsiyonlama (Opsiyonel)</span>
+                                    </label>
+                                    <p className="text-[10px] text-zinc-500 mb-2">
+                                        Ürünü reçetelerde "Adet" olarak kullanmak istiyorsanız bir porsiyonun ağırlığını girin.
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <NumberInput
+                                            value={portionWeight || 0}
+                                            onChange={(val) => setPortionWeight(val > 0 ? val : undefined)}
+                                            className="flex-1"
+                                            placeholder="Örn: 150"
+                                            step={1}
+                                        />
+                                        <select
+                                            value={portionUnit}
+                                            onChange={(e) => setPortionUnit(e.target.value as 'gr' | 'cl')}
+                                            className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-orange-500 text-sm"
+                                        >
+                                            <option value="gr">gr</option>
+                                            <option value="cl">cl</option>
+                                        </select>
+                                    </div>
+                                    {portionWeight && (
+                                        <p className="text-[10px] text-orange-400/70 mt-1 font-medium">
+                                            1 Adet Maliyeti: ~{((costPerUnit / (portionUnit === 'gr' ? 1000 : 100)) * portionWeight).toFixed(2)}₺
+                                        </p>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Cost Summary Box */}
                             <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-4 space-y-3 mt-4">

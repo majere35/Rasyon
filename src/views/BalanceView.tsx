@@ -204,22 +204,18 @@ export function BalanceView() {
             breakdown[rate].vat += e.finalVat;
         });
 
-        // Add ingredients
-        breakdown[0.01].base += monthlyIngredientsCost;
-        breakdown[0.01].vat += monthlyIngredientsVat;
-
         return breakdown;
     }, [allExpensesWithCalc, monthlyIngredientsCost, monthlyIngredientsVat]);
 
     const totalExpenses = allExpensesWithCalc.reduce((sum, e) => sum + e.finalAmount, 0);
-    const totalExpensesVat = allExpensesWithCalc.reduce((sum, e) => sum + e.finalVat, 0) + monthlyIngredientsVat;
+    const totalExpensesVat = allExpensesWithCalc.reduce((sum, e) => sum + e.finalVat, 0);
     const netProfit = monthlyRevenue - totalExpenses;
 
     // --- Stopaj Calculation for Summary ---
     // We need to tell the user how much Stopaj they will pay.
     // Stopaj = Gross - Net. Or Gross * 0.20.
     const totalStopaj = allExpensesWithCalc
-        .filter(e => e.name.toLowerCase() === 'kira' && e.taxMethod === 'stopaj')
+        .filter(e => e.name.toLowerCase().includes('kira') && e.taxMethod === 'stopaj')
         .reduce((sum, e) => sum + (e.finalAmount * 0.20), 0);
 
 
@@ -254,7 +250,8 @@ export function BalanceView() {
     }
 
     // TRUE NET: "Her şey ödendikten sonra elimize ne kalıyor"
-    const trueNetCash = netProfit - incomeTax - payableVat - totalStopaj;
+    // Fix: Remove - totalStopaj from here because it's already included in totalExpenses (as Gross Rent)
+    const trueNetCash = netProfit - incomeTax - payableVat;
 
 
     // --- Actions ---
@@ -507,7 +504,7 @@ export function BalanceView() {
                                                                 </span>
 
                                                                 {/* RENT TAX SWITCH */}
-                                                                {expense.name.toLowerCase() === 'kira' && (
+                                                                {expense.name.toLowerCase().includes('kira') && (
                                                                     <div className="flex items-center gap-2 ml-8">
                                                                         {/* Toggle Switch */}
                                                                         <div
@@ -541,7 +538,7 @@ export function BalanceView() {
 
 
                                                 {/* VAT Selector (Hidden for Rent) */}
-                                                {expense.name.toLowerCase() !== 'kira' && (
+                                                {!expense.name.toLowerCase().includes('kira') && (
                                                     <div className="relative mr-3">
                                                         <div
                                                             className="px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors bg-zinc-800 text-zinc-500 hover:bg-zinc-700 hover:text-zinc-300 flex items-center gap-1"

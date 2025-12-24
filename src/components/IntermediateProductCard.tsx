@@ -63,10 +63,24 @@ export function IntermediateProductCard({ product, onEdit, onDelete }: Intermedi
                     </div>
 
                     <div className="flex justify-between items-center text-xs border-t border-zinc-700/50 pt-2">
-                        <span className="text-zinc-500">Birim Maliyet</span>
-                        <span className="font-mono text-orange-400 font-bold">
-                            {formatCurrency(product.costPerUnit)}/{product.productionUnit}
-                        </span>
+                        {product.portionWeight && product.productionUnit !== 'adet' ? (
+                            <>
+                                <span className="text-zinc-500">
+                                    Adet Maliyeti
+                                    <span className="text-[10px] ml-1">({product.portionWeight}{product.portionUnit})</span>
+                                </span>
+                                <span className="font-mono text-orange-400 font-bold">
+                                    {formatCurrency((product.costPerUnit / (product.portionUnit === 'cl' ? 100 : 1000)) * product.portionWeight)}/adet
+                                </span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-zinc-500">Birim Maliyet</span>
+                                <span className="font-mono text-orange-400 font-bold">
+                                    {formatCurrency(product.costPerUnit)}/{product.productionUnit}
+                                </span>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>

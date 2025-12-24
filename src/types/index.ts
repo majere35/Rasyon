@@ -48,6 +48,8 @@ export interface IntermediateProduct {
     productionQuantity: number;
     productionUnit: 'kg' | 'lt' | 'adet';
     costPerUnit: number;
+    portionWeight?: number; // Weight/Volume of a single portion (in grams or ml)
+    portionUnit?: 'gr' | 'cl'; // Unit of the portion weight
 }
 
 export interface SalesTarget {

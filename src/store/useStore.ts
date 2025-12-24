@@ -296,6 +296,13 @@ export const useStore = create<AppState>()(
                     recipeUpdated = true;
                     const newRecipeIngredients = recipe.ingredients.map(ing => {
                         if (ing.intermediateProductId === id) {
+                            // If user already chose 'adet' and we have portionWeight, preserve it and update portion price
+                            if (ing.unit === 'adet' && updated.portionWeight && updated.productionUnit !== 'adet') {
+                                const factor = updated.portionUnit === 'cl' ? 100 : 1000;
+                                const portionPrice = updated.costPerUnit * (updated.portionWeight / factor);
+                                return { ...ing, price: portionPrice };
+                            }
+                            // Otherwise, fall back to default production unit and unit price (kg/lt)
                             return { ...ing, price: updated.costPerUnit, unit: updated.productionUnit };
                         }
                         return ing;

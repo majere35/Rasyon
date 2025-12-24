@@ -29,6 +29,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             packagingCosts: state.packagingCosts,
             rawIngredients: state.rawIngredients,
             ingredientCategories: state.ingredientCategories,
+            recipeCategories: state.recipeCategories, // ADDED
+            intermediateProducts: state.intermediateProducts, // ADDED
             monthlyClosings: state.monthlyClosings,
             onlineCommissionRate: state.onlineCommissionRate, // Include commission rate
             theme: state.theme,
@@ -81,6 +83,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     packagingCosts: data.packagingCosts || [],
                     rawIngredients: data.rawIngredients || [],
                     ingredientCategories: data.ingredientCategories || [],
+                    recipeCategories: data.recipeCategories || [], // ADDED
+                    intermediateProducts: data.intermediateProducts || [], // ADDED
                     monthlyClosings: data.monthlyClosings || [],
                     onlineCommissionRate: data.onlineCommissionRate || 10, // Restore commission rate
                     theme: data.theme || 'dark'

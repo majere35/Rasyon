@@ -104,7 +104,24 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
 
     const updateIngredient = (index: number, field: keyof Omit<Ingredient, 'id'> | 'rawIngredientId', value: string | number | null) => {
         const newIngredients = [...ingredients];
-        newIngredients[index] = { ...newIngredients[index], [field]: value };
+        const item = { ...newIngredients[index], [field]: value };
+
+        // Handle price recalculation when unit changes for portioned intermediate products
+        if (field === 'unit' && item.intermediateProductId) {
+            const product = intermediateProducts.find(p => p.id === item.intermediateProductId);
+            if (product && product.portionWeight && product.productionUnit !== 'adet') {
+                if (value === 'adet') {
+                    // Calculate price for 1 portion
+                    const factor = product.portionUnit === 'cl' ? 100 : 1000;
+                    item.price = product.costPerUnit * (product.portionWeight / factor);
+                } else if (value === product.productionUnit) {
+                    // Revert to per kg/lt price
+                    item.price = product.costPerUnit;
+                }
+            }
+        }
+
+        newIngredients[index] = item;
         setIngredientsWithFixedPrice(newIngredients);
     };
 
@@ -137,11 +154,22 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
 
     const selectIntermediateProduct = (index: number, product: any) => {
         const newIngredients = [...ingredients];
+
+        // If it has portionWeight, default to 'adet' and calculate portion price
+        let price = product.costPerUnit;
+        let unit = product.productionUnit;
+
+        if (product.portionWeight && product.productionUnit !== 'adet') {
+            unit = 'adet';
+            const factor = product.portionUnit === 'cl' ? 100 : 1000;
+            price = product.costPerUnit * (product.portionWeight / factor);
+        }
+
         newIngredients[index] = {
             ...newIngredients[index],
             name: product.name,
-            unit: product.productionUnit,
-            price: product.costPerUnit,
+            unit: unit,
+            price: price,
             rawIngredientId: undefined, // Clear any raw ingredient link
             intermediateProductId: product.id
         };
@@ -501,7 +529,7 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                     />
                                                 </td>
                                                 <td className="p-2">
-                                                    {isIngredientLinked(item) ? (
+                                                    {item.rawIngredientId || (item.intermediateProductId && !intermediateProducts.find(p => p.id === item.intermediateProductId)?.portionWeight) ? (
                                                         <div className={`text-sm px-1 py-1 ${item.intermediateProductId ? 'text-orange-400' : 'text-zinc-400'}`}>{item.unit}</div>
                                                     ) : (
                                                         <select
@@ -509,11 +537,22 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                                             onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
                                                             className="w-full bg-zinc-800/50 rounded px-1 py-1 text-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 text-xs"
                                                         >
-                                                            <option value="adet">Adet</option>
-                                                            <option value="kg">Kg</option>
-                                                            <option value="gr">Gr</option>
-                                                            <option value="lt">Lt</option>
-                                                            <option value="cl">Cl</option>
+                                                            {item.intermediateProductId ? (
+                                                                <>
+                                                                    <option value="adet">Adet</option>
+                                                                    <option value={intermediateProducts.find(p => p.id === item.intermediateProductId)?.productionUnit}>
+                                                                        {intermediateProducts.find(p => p.id === item.intermediateProductId)?.productionUnit}
+                                                                    </option>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <option value="adet">Adet</option>
+                                                                    <option value="kg">Kg</option>
+                                                                    <option value="gr">Gr</option>
+                                                                    <option value="lt">Lt</option>
+                                                                    <option value="cl">Cl</option>
+                                                                </>
+                                                            )}
                                                         </select>
                                                     )}
                                                 </td>
