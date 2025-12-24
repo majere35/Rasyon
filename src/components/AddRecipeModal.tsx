@@ -195,13 +195,14 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
         const sourceRecipe = recipes.find(r => r.id === copySourceId);
         if (sourceRecipe) {
             // Map ingredients to new objects to avoid reference issues
-            // but PRESERVE rawIngredientId to keep the link to global stock
+            // but PRESERVE rawIngredientId and intermediateProductId to keep links
             const copiedIngredients = sourceRecipe.ingredients.map(ing => ({
                 name: ing.name,
                 quantity: ing.quantity,
                 unit: ing.unit,
-                price: ing.price,
-                rawIngredientId: ing.rawIngredientId // Crucial: Maintain the link
+                price: Number(ing.price.toFixed(4)), // Fix long float precision issues
+                rawIngredientId: ing.rawIngredientId,
+                intermediateProductId: ing.intermediateProductId
             }));
 
             setIngredientsWithFixedPrice(copiedIngredients);
