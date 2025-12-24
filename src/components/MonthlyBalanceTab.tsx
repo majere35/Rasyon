@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Building2, Factory, Truck, Users, TrendingUp } from 'lucide-react';
+import { Building2, Factory, Truck, Users, TrendingUp, Receipt } from 'lucide-react';
 import type { MonthlyMonthData } from '../types';
 import { useStore } from '../store/useStore';
 import { TaxSummary } from './TaxSummary';
@@ -46,24 +46,43 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
         let totalDeductibleVat = commissionVat;
         let totalStopajTax = 0;
 
+        const vatBreakdown: Record<number, { base: number; vat: number }> = {
+            0.01: { base: 0, vat: 0 },
+            0.10: { base: 0, vat: 0 },
+            0.20: { base: 0, vat: 0 }
+        };
+
+        // Add commission to breakdown
+        const commRate = appConfig.commissionVat.rate / 100;
+        if (!vatBreakdown[commRate]) vatBreakdown[commRate] = { base: 0, vat: 0 };
+        vatBreakdown[commRate].base += commissionCost;
+        vatBreakdown[commRate].vat += commissionVat;
+
         // 3. Aggregate Invoices Dynamically
         invoices.forEach(inv => {
             const category = inv.category || 'diger';
             const amt = inv.amount || 0;
 
             // TAX CALCULATIONS
+            const rate = (inv.taxRate !== undefined ? inv.taxRate : 20) / 100;
+            if (!vatBreakdown[rate]) vatBreakdown[rate] = { base: 0, vat: 0 };
+
             if (category === 'kira') {
                 if (inv.taxMethod === 'stopaj') {
                     const gross = amt / 0.8;
                     const stopaj = gross * 0.20;
                     totalStopajTax += stopaj;
                 } else {
-                    const vat = amt * ((inv.taxRate || 20) / 100);
+                    const vat = amt * rate;
                     totalDeductibleVat += vat;
+                    vatBreakdown[rate].base += amt;
+                    vatBreakdown[rate].vat += vat;
                 }
             } else {
-                const vat = amt * ((inv.taxRate !== undefined ? inv.taxRate : 20) / 100);
+                const vat = amt * rate;
                 totalDeductibleVat += vat;
+                vatBreakdown[rate].base += amt;
+                vatBreakdown[rate].vat += vat;
             }
 
             // CATEGORY AGGREGATION (Dynamic)
@@ -140,6 +159,7 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
             totalRevenue,
             totalStopajTax,
             totalDeductibleVat,
+            vatBreakdown,
             groups: [
                 groupMap.general,
                 groupMap.production,
@@ -237,6 +257,58 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
                         </div>
                     );
                 })}
+
+                {/* Fatura Özeti (Breakdown) */}
+                <div className="mt-8 bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 relative overflow-hidden group/invoice">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] rounded-full pointer-events-none"></div>
+
+                    <div className="flex items-center gap-2 mb-6 text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                        <Receipt size={20} className="text-indigo-500" />
+                        <h3 className="font-bold text-sm uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Harcama ve KDV Detay Listesi (Genel Toplam)</h3>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex justify-between text-[10px] text-zinc-400 font-black uppercase tracking-widest px-3 border-b border-zinc-100 dark:border-zinc-800 pb-1">
+                            <span>KDV ORANI</span>
+                            <div className="flex gap-12">
+                                <span className="w-24 text-right">MATRAH (NET)</span>
+                                <span className="w-24 text-right">KDV TUTARI</span>
+                            </div>
+                        </div>
+
+                        {Object.entries(aggregatedData.vatBreakdown)
+                            .map(([rate, data]: [string, any]) => ({ rate: parseFloat(rate), data }))
+                            .filter(item => item.data.base > 0)
+                            .sort((a, b) => a.rate - b.rate)
+                            .map(({ rate, data }) => (
+                                <div key={rate} className="flex justify-between items-center text-sm py-1.5 px-3 hover:bg-zinc-100 dark:hover:bg-white/5 rounded-lg transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${rate === 0.01 ? 'bg-orange-500' : rate === 0.10 ? 'bg-indigo-500' : 'bg-green-500'}`}></div>
+                                        <span className="text-zinc-600 dark:text-zinc-400 font-medium whitespace-nowrap">%{Math.round(rate * 100)} KDV</span>
+                                    </div>
+                                    <div className="flex gap-12 font-mono">
+                                        <span className="w-24 text-right text-zinc-700 dark:text-zinc-300">{formatCurrency(data.base)}</span>
+                                        <span className="w-24 text-right text-zinc-500">{formatCurrency(data.vat)}</span>
+                                    </div>
+                                </div>
+                            ))}
+
+                        <div className="pt-6 mt-4 border-t border-zinc-200 dark:border-zinc-700/50">
+                            <div className="flex justify-between items-center px-3 bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-[0.2em] mb-1">Aylık Toplam Ödeme</span>
+                                    <span className="font-bold text-zinc-900 dark:text-white text-lg">GENEL TOPLAM (NAKİT)</span>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-3xl font-black text-zinc-900 dark:text-white font-mono tracking-tighter drop-shadow-sm">
+                                        {formatCurrency(totalExpenses + aggregatedData.totalDeductibleVat)}
+                                    </div>
+                                    <span className="text-[10px] text-zinc-500 font-medium italic block mt-1 whitespace-nowrap">Cebinizden çıkan toplam nakit tutar</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* RIGHT: Financial Summary (4 Cols) */}

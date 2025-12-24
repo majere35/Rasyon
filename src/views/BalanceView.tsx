@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Trash2, TrendingUp, Calendar, Plus, X, Building2, Factory, Truck, Users } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Trash2, TrendingUp, Calendar, Plus, X, Building2, Factory, Truck, Users, Receipt } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatCurrency, getNetPrice } from '../lib/utils';
 import { NumberInput } from '../components/NumberInput';
@@ -186,6 +186,30 @@ export function BalanceView() {
         finalAmount: getCalculatedAmount(e),
         finalVat: getExpenseVat(e)
     }));
+
+    // --- VAT Breakdown Calculation ---
+    const vatBreakdown = useMemo(() => {
+        const breakdown: Record<number, { base: number; vat: number }> = {
+            0: { base: 0, vat: 0 },
+            0.01: { base: 0, vat: 0 },
+            0.10: { base: 0, vat: 0 },
+            0.20: { base: 0, vat: 0 },
+        };
+
+        // Add regular expenses
+        allExpensesWithCalc.forEach(e => {
+            const rate = e.vatRate !== undefined ? e.vatRate : 0.20;
+            if (breakdown[rate] === undefined) breakdown[rate] = { base: 0, vat: 0 };
+            breakdown[rate].base += e.finalAmount;
+            breakdown[rate].vat += e.finalVat;
+        });
+
+        // Add ingredients
+        breakdown[0.01].base += monthlyIngredientsCost;
+        breakdown[0.01].vat += monthlyIngredientsVat;
+
+        return breakdown;
+    }, [allExpensesWithCalc, monthlyIngredientsCost, monthlyIngredientsVat]);
 
     const totalExpenses = allExpensesWithCalc.reduce((sum, e) => sum + e.finalAmount, 0);
     const totalExpensesVat = allExpensesWithCalc.reduce((sum, e) => sum + e.finalVat, 0) + monthlyIngredientsVat;
@@ -629,6 +653,59 @@ export function BalanceView() {
                             </div>
                         );
                     })}
+
+                    {/* Fatura Özeti (Breakdown) */}
+                    <div className="mt-8 bg-zinc-900/40 border border-zinc-800 rounded-xl p-6 relative overflow-hidden group/invoice">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] rounded-full pointer-events-none"></div>
+
+                        <div className="flex items-center gap-2 mb-6 text-zinc-400 border-b border-zinc-800/50 pb-3">
+                            <Receipt size={20} className="text-indigo-400" />
+                            <h3 className="font-bold text-sm uppercase tracking-wider text-indigo-300">Gider ve KDV Detay Listesi (Genel Toplam)</h3>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-[10px] text-zinc-500 font-black uppercase tracking-widest px-3 border-b border-zinc-800 pb-1">
+                                <span>KDV ORANI</span>
+                                <div className="flex gap-12">
+                                    <span className="w-24 text-right">MATRAH (NET)</span>
+                                    <span className="w-24 text-right">KDV TUTARI</span>
+                                </div>
+                            </div>
+
+                            {/* Render rows from breakdown */}
+                            {Object.entries(vatBreakdown)
+                                .map(([rate, data]) => ({ rate: parseFloat(rate), data }))
+                                .filter(item => item.data.base > 0)
+                                .sort((a, b) => a.rate - b.rate)
+                                .map(({ rate, data }) => (
+                                    <div key={rate} className="flex justify-between items-center text-sm py-1.5 px-3 hover:bg-white/5 rounded-lg transition-colors">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${rate === 0.01 ? 'bg-orange-400' : rate === 0.10 ? 'bg-indigo-400' : 'bg-green-400'}`}></div>
+                                            <span className="text-zinc-400 font-medium">%{rate * 100} KDV</span>
+                                        </div>
+                                        <div className="flex gap-12 font-mono">
+                                            <span className="w-24 text-right text-zinc-300">{formatCurrency(data.base)}</span>
+                                            <span className="w-24 text-right text-zinc-400">{formatCurrency(data.vat)}</span>
+                                        </div>
+                                    </div>
+                                ))}
+
+                            <div className="pt-6 mt-4 border-t border-zinc-700/50">
+                                <div className="flex justify-between items-center px-3 bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] text-indigo-400 font-black uppercase tracking-[0.2em] mb-1">Aylık Tahmini Ödeme</span>
+                                        <span className="font-bold text-white text-lg">TOPLAM (KDV DAHİL)</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-3xl font-black text-white font-mono tracking-tighter drop-shadow-sm">
+                                            {formatCurrency(totalExpenses + totalExpensesVat)}
+                                        </div>
+                                        <span className="text-[10px] text-zinc-500 font-medium italic block mt-1">Cebinizden çıkacak net toplam nakit</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* RIGHT: Tax & Financial Summary (4 Cols) - SWAPPED ORDER */}
