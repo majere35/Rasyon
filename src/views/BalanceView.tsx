@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, TrendingUp, Calendar, Plus, X, Building2, Factory, Truck, Users, PenLine } from 'lucide-react';
+import { Trash2, TrendingUp, Calendar, Plus, X, Building2, Factory, Truck, Users } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { formatCurrency, getNetPrice } from '../lib/utils';
 import { NumberInput } from '../components/NumberInput';
@@ -53,7 +53,6 @@ export function BalanceView() {
         daysWorkedInMonth,
         setDaysWorked,
         company,
-        toggleConfig,
         rawIngredients
     } = useStore();
 
@@ -315,21 +314,7 @@ export function BalanceView() {
                             (Tüm giderlerinizi KDV hariç olarak girin.)
                         </span>
                     </p>
-                    {company && (
-                        <div
-                            className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full cursor-pointer hover:bg-indigo-500/20 transition-colors"
-                            onClick={() => toggleConfig(true)}
-                            title="Bilgileri Düzenle"
-                        >
-                            <Building2 size={12} className="text-indigo-400" />
-                            <span className="text-xs font-semibold text-indigo-300">
-                                {company.officialName}
-                                <span className="text-zinc-500 mx-1">|</span>
-                                <span className="text-white">{company.name}</span>
-                            </span>
-                            <PenLine size={10} className="text-indigo-500 ml-1" />
-                        </div>
-                    )}
+
                 </div>
 
                 <div className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center gap-4">
