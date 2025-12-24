@@ -8,7 +8,7 @@ import { MonthlyBalanceTab } from '../components/MonthlyBalanceTab';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { expenseCategoryOptions, getCategoryLabel } from '../data/expenseCategories';
 import { MonthlyReportTemplate } from '../components/MonthlyReportTemplate';
-import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, ChevronLeft, ChevronRight, Calendar, Check, X, Printer } from 'lucide-react';
+import { Loader2, Plus, Lock, Unlock, FileText, CheckCircle, AlertCircle, Pencil, Trash2, ChevronDown, ChevronLeft, ChevronRight, Calendar, Check, X, Printer, Receipt } from 'lucide-react';
 import { calculateIncomeTax, getAvailableVatCarryOver, calculateVatStatus } from '../utils/taxUtils';
 import { appConfig } from '../config/appConfig';
 
@@ -641,6 +641,35 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
         setEditForm({});
     };
 
+    const vatBreakdown = useMemo(() => {
+        const breakdown: Record<number, { base: number; vat: number }> = {
+            0.01: { base: 0, vat: 0 },
+            0.10: { base: 0, vat: 0 },
+            0.20: { base: 0, vat: 0 },
+        };
+
+        data.invoices.forEach(inv => {
+            const amt = inv.amount || 0;
+            const rate = (inv.taxRate !== undefined ? inv.taxRate : 20) / 100;
+            if (rate === 0) return;
+
+            if (!breakdown[rate]) breakdown[rate] = { base: 0, vat: 0 };
+
+            if (inv.category === 'kira' && inv.taxMethod === 'stopaj') {
+                // skip
+            } else {
+                const vat = amt * rate;
+                breakdown[rate].base += amt;
+                breakdown[rate].vat += vat;
+            }
+        });
+
+        return breakdown;
+    }, [data.invoices]);
+
+    const totalInvoicesAmount = data.invoices.reduce((sum, i) => sum + i.amount, 0);
+    const totalInvoicesVat = Object.values(vatBreakdown).reduce((sum, d: any) => sum + d.vat, 0);
+
     return (
         <div className="space-y-6">
             {/* ... form ... */}
@@ -787,6 +816,58 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+
+            {/* Fatura Özeti (Detail Breakdown) */}
+            <div className="bg-white dark:bg-[#18181b] p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group/invoice">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-[50px] rounded-full pointer-events-none"></div>
+
+                <div className="flex items-center gap-2 mb-6 text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                    <Receipt size={20} className="text-indigo-600 dark:text-indigo-400" />
+                    <h3 className="font-bold text-sm uppercase tracking-wider text-indigo-700 dark:text-indigo-300">Gider Girişi KDV Detay Listesi (Genel Toplam)</h3>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex justify-between text-[10px] text-zinc-400 font-black uppercase tracking-widest px-3 border-b border-zinc-100 dark:border-zinc-800 pb-1">
+                        <span>KDV ORANI</span>
+                        <div className="flex gap-12">
+                            <span className="w-24 text-right">MATRAH (NET)</span>
+                            <span className="w-24 text-right">KDV TUTARI</span>
+                        </div>
+                    </div>
+
+                    {Object.entries(vatBreakdown)
+                        .map(([rate, data]) => ({ rate: parseFloat(rate), data: data as { base: number, vat: number } }))
+                        .filter(item => item.data.base > 0)
+                        .sort((a, b) => a.rate - b.rate)
+                        .map(({ rate, data }) => (
+                            <div key={rate} className="flex justify-between items-center text-sm py-1.5 px-3 hover:bg-zinc-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${rate === 0.01 ? 'bg-orange-500' : rate === 0.10 ? 'bg-indigo-500' : 'bg-green-500'}`}></div>
+                                    <span className="text-zinc-600 dark:text-zinc-400 font-medium whitespace-nowrap">%{Math.round(rate * 100)} KDV</span>
+                                </div>
+                                <div className="flex gap-12 font-mono">
+                                    <span className="w-24 text-right text-zinc-700 dark:text-zinc-300">{formatCurrency(data.base)}</span>
+                                    <span className="w-24 text-right text-zinc-500">{formatCurrency(data.vat)}</span>
+                                </div>
+                            </div>
+                        ))}
+
+                    <div className="pt-6 mt-4 border-t border-zinc-200 dark:border-zinc-700/50">
+                        <div className="flex justify-between items-center px-3 bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/10">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-[0.2em] mb-1">Toplam Fatura Ödemesi</span>
+                                <span className="font-bold text-zinc-900 dark:text-white text-lg uppercase">Gider Genel Toplam (NAKİT)</span>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-3xl font-black text-zinc-900 dark:text-white font-mono tracking-tighter drop-shadow-sm">
+                                    {formatCurrency(totalInvoicesAmount + totalInvoicesVat)}
+                                </div>
+                                <span className="text-[10px] text-zinc-500 font-medium italic block mt-1 whitespace-nowrap">Fatura girişlerine göre cebinizden çıkan toplam nakit</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <ConfirmModal
