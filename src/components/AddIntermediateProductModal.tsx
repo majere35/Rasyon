@@ -12,7 +12,7 @@ interface AddIntermediateProductModalProps {
 }
 
 export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: AddIntermediateProductModalProps) {
-    const { addIntermediateProduct, updateIntermediateProduct, rawIngredients } = useStore();
+    const { addIntermediateProduct, updateIntermediateProduct, rawIngredients, intermediateProducts } = useStore();
 
     const [name, setName] = useState('');
     const [ingredients, setIngredients] = useState<Omit<Ingredient, 'id'>[]>([]);
@@ -80,7 +80,23 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
             name: rawIngredient.name,
             unit: rawIngredient.unit,
             price: rawIngredient.price,
-            rawIngredientId: rawIngredient.id
+            rawIngredientId: rawIngredient.id,
+            intermediateProductId: undefined
+        };
+        setIngredients(newIngredients);
+        setShowSuggestions(false);
+        setActiveSearchIndex(null);
+    };
+
+    const selectIntermediateProduct = (index: number, product: IntermediateProduct) => {
+        const newIngredients = [...ingredients];
+        newIngredients[index] = {
+            ...newIngredients[index],
+            name: product.name,
+            unit: product.productionUnit as any,
+            price: product.costPerUnit,
+            rawIngredientId: undefined,
+            intermediateProductId: product.id
         };
         setIngredients(newIngredients);
         setShowSuggestions(false);
@@ -90,6 +106,12 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
     const filteredRawIngredients = searchQuery
         ? rawIngredients.filter(ri => ri.name.toLowerCase().includes(searchQuery.toLowerCase()))
         : rawIngredients;
+
+    const filteredIntermediateProducts = searchQuery
+        ? intermediateProducts
+            .filter(ip => ip.id !== editProduct?.id) // Prevent self-nesting
+            .filter(ip => ip.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : intermediateProducts.filter(ip => ip.id !== editProduct?.id);
 
     const calculateTotalQuantity = () => {
         return ingredients.reduce((sum, item) => {
@@ -272,9 +294,9 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
                                                                     setShowSuggestions(true);
                                                                 }
                                                             }}
-                                                            readOnly={!!item.rawIngredientId}
+                                                            readOnly={!!item.rawIngredientId || !!item.intermediateProductId}
                                                             placeholder="Malzeme adı..."
-                                                            className={`w-full bg-transparent border-dashed border-b p-0 text-sm pb-1 focus:ring-0 ${item.rawIngredientId
+                                                            className={`w-full bg-transparent border-dashed border-b p-0 text-sm pb-1 focus:ring-0 ${item.rawIngredientId || item.intermediateProductId
                                                                 ? 'text-orange-400 font-medium border-transparent'
                                                                 : 'text-zinc-200 border-zinc-700 placeholder-zinc-700 focus:border-orange-500'
                                                                 }`}
@@ -282,26 +304,58 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
                                                         {item.rawIngredientId && (
                                                             <Link size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-orange-500/50" />
                                                         )}
+                                                        {item.intermediateProductId && (
+                                                            <Beaker size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-orange-500/50" />
+                                                        )}
                                                     </div>
 
                                                     {/* Auto-complete Dropdown */}
-                                                    {showSuggestions && activeSearchIndex === index && !item.rawIngredientId && (
-                                                        <div ref={searchRef} className="absolute left-0 top-full mt-1 w-64 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
-                                                            {filteredRawIngredients.length > 0 ? (
-                                                                filteredRawIngredients.map(ri => (
-                                                                    <div
-                                                                        key={ri.id}
-                                                                        onClick={() => selectRawIngredient(index, ri)}
-                                                                        className="px-3 py-2 hover:bg-zinc-800 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group"
-                                                                    >
-                                                                        <span>{ri.name}</span>
-                                                                        <span className="text-xs text-zinc-500 font-mono group-hover:text-zinc-400">
-                                                                            {ri.price.toFixed(2)}₺/{ri.unit}
-                                                                        </span>
+                                                    {showSuggestions && activeSearchIndex === index && !item.rawIngredientId && !item.intermediateProductId && (
+                                                        <div ref={searchRef} className="absolute left-0 top-full mt-1 w-72 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-64 overflow-y-auto">
+                                                            {/* Intermediate Products Section */}
+                                                            {filteredIntermediateProducts.length > 0 && (
+                                                                <div className="border-b border-zinc-800">
+                                                                    <div className="px-3 py-1.5 bg-zinc-800/50 text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                                                                        <Beaker size={10} /> Ara Ürünler
                                                                     </div>
-                                                                ))
-                                                            ) : (
-                                                                <div className="px-3 py-2 text-xs text-zinc-500">Sonuç bulunamadı</div>
+                                                                    {filteredIntermediateProducts.map(ip => (
+                                                                        <div
+                                                                            key={ip.id}
+                                                                            onClick={() => selectIntermediateProduct(index, ip)}
+                                                                            className="px-3 py-2 hover:bg-orange-500/10 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group transition-colors"
+                                                                        >
+                                                                            <span className="group-hover:text-orange-400">{ip.name}</span>
+                                                                            <span className="text-xs text-zinc-500 font-mono group-hover:text-zinc-400">
+                                                                                {ip.costPerUnit.toFixed(2)}₺/{ip.productionUnit}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {/* Raw Ingredients Section */}
+                                                            {filteredRawIngredients.length > 0 && (
+                                                                <div>
+                                                                    <div className="px-3 py-1.5 bg-zinc-800/50 text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
+                                                                        <Link size={10} /> Hammaddeler
+                                                                    </div>
+                                                                    {filteredRawIngredients.map(ri => (
+                                                                        <div
+                                                                            key={ri.id}
+                                                                            onClick={() => selectRawIngredient(index, ri)}
+                                                                            className="px-3 py-2 hover:bg-zinc-800 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group transition-colors"
+                                                                        >
+                                                                            <span>{ri.name}</span>
+                                                                            <span className="text-xs text-zinc-500 font-mono group-hover:text-zinc-400">
+                                                                                {ri.price.toFixed(2)}₺/{ri.unit}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+
+                                                            {filteredRawIngredients.length === 0 && filteredIntermediateProducts.length === 0 && (
+                                                                <div className="px-3 py-4 text-center text-xs text-zinc-500">Sonuç bulunamadı</div>
                                                             )}
                                                         </div>
                                                     )}
@@ -316,7 +370,7 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
                                                     />
                                                 </td>
                                                 <td className="p-2">
-                                                    {item.rawIngredientId ? (
+                                                    {item.rawIngredientId || item.intermediateProductId ? (
                                                         <div className="text-zinc-400 text-sm px-1 py-1">{item.unit}</div>
                                                     ) : (
                                                         <select
@@ -333,7 +387,7 @@ export function AddIntermediateProductModal({ isOpen, onClose, editProduct }: Ad
                                                     )}
                                                 </td>
                                                 <td className="p-2">
-                                                    {item.rawIngredientId ? (
+                                                    {item.rawIngredientId || item.intermediateProductId ? (
                                                         <div className="text-zinc-400 font-mono text-sm px-1 opacity-70 cursor-not-allowed">
                                                             {item.price.toFixed(2)}
                                                         </div>
