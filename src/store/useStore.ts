@@ -225,6 +225,7 @@ export const useStore = create<AppState>()(
             deleteIngredientCategory: (id) => set((state) => ({
                 ingredientCategories: state.ingredientCategories.filter(item => item.id !== id)
             })),
+            setIngredientCategories: (categories) => set({ ingredientCategories: categories }),
 
             bulkDeleteRawIngredients: (ids: string[]) => set((state) => {
                 // Remove from raw ingredients

@@ -1,10 +1,136 @@
 import { useState } from 'react';
-import { Plus, Search, Trash2, Tag, Edit2, AlertCircle } from 'lucide-react';
+import { Plus, Search, Trash2, Tag, Edit2, AlertCircle, GripVertical } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { NumberInput } from '../components/NumberInput';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { formatCurrency } from '../lib/utils';
-import type { RawIngredient } from '../types';
+import type { RawIngredient, IngredientCategory } from '../types';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SortableItemProps {
+    id: string;
+    cat: IngredientCategory;
+    selectedCategory: string | null;
+    onSelect: (id: string) => void;
+    onEdit: (cat: IngredientCategory) => void;
+    onDelete: (id: string) => void;
+    editingColorId: string | null;
+    setEditingColorId: (id: string | null) => void;
+    COLORS: string[];
+    handleColorUpdate: (id: string, color: string) => void;
+}
+
+function SortableItem({
+    id,
+    cat,
+    selectedCategory,
+    onSelect,
+    onEdit,
+    onDelete,
+    editingColorId,
+    setEditingColorId,
+    COLORS,
+    handleColorUpdate
+}: SortableItemProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : undefined,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`group relative flex items-center gap-1 ${isDragging ? 'opacity-50' : ''}`}
+        >
+            <div
+                {...attributes}
+                {...listeners}
+                className="w-6 h-8 flex items-center justify-center cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 transition-colors shrink-0"
+            >
+                <GripVertical size={14} />
+            </div>
+            <button
+                onClick={() => onSelect(cat.id)}
+                className={`flex-1 text-left pr-3 pl-1 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${selectedCategory === cat.id
+                    ? 'bg-indigo-500/10 text-indigo-400 font-medium border border-indigo-500/20'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                    }`}
+            >
+                <div className="relative">
+                    <div
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingColorId(editingColorId === cat.id ? null : cat.id);
+                        }}
+                        className={`w-3 h-3 rounded-full ${cat.color} hover:ring-2 ring-white/20 transition-all cursor-pointer shrink-0`}
+                    ></div>
+
+                    {editingColorId === cat.id && (
+                        <div
+                            className="absolute left-0 top-full mt-2 z-50 bg-[#18181b] border border-zinc-800 rounded-xl shadow-2xl p-3 w-48 animate-in fade-in zoom-in-95"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="grid grid-cols-4 gap-2">
+                                {COLORS.map((color) => (
+                                    <button
+                                        key={color}
+                                        onClick={() => handleColorUpdate(cat.id, color)}
+                                        className={`w-8 h-8 rounded-full ${color} hover:scale-110 transition-transform ${cat.color === color ? 'ring-2 ring-white' : ''}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {editingColorId === cat.id && (
+                        <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setEditingColorId(null); }} />
+                    )}
+                </div>
+                <span className="truncate">{cat.name}</span>
+            </button>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-all">
+                <button
+                    onClick={(e) => { e.stopPropagation(); onEdit(cat); }}
+                    className="text-zinc-600 hover:text-indigo-400 transition-all p-1"
+                >
+                    <Edit2 size={12} />
+                </button>
+                <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(cat.id); }}
+                    className="text-zinc-600 hover:text-red-400 transition-all p-1"
+                >
+                    <Trash2 size={12} />
+                </button>
+            </div>
+        </div>
+    );
+}
 
 export function IngredientsView() {
     const {
@@ -16,8 +142,16 @@ export function IngredientsView() {
         bulkDeleteRawIngredients,
         addIngredientCategory,
         updateIngredientCategory,
-        deleteIngredientCategory
+        deleteIngredientCategory,
+        setIngredientCategories
     } = useStore();
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     // Color Palette - 16 Colors (4x4)
     const COLORS = [
@@ -58,6 +192,9 @@ export function IngredientsView() {
 
     // Color Popover State
     const [editingColorId, setEditingColorId] = useState<string | null>(null);
+
+    // Editing Category State
+    const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
 
     // Warning Modal
     const [warningMessage, setWarningMessage] = useState<string | null>(null);
@@ -235,22 +372,49 @@ export function IngredientsView() {
 
     // Category Management
     const handleAddCategoryClick = () => {
+        setEditingCategoryId(null);
         setNewCategoryName('');
         setSelectedColor(COLORS[0]);
+        setIsCategoryModalOpen(true);
+    };
+
+    const handleEditCategory = (category: IngredientCategory) => {
+        setEditingCategoryId(category.id);
+        setNewCategoryName(category.name);
+        setSelectedColor(category.color);
         setIsCategoryModalOpen(true);
     };
 
     const submitAddCategory = (e: React.FormEvent) => {
         e.preventDefault();
         if (newCategoryName.trim()) {
-            addIngredientCategory({
-                id: crypto.randomUUID(),
-                name: newCategoryName.trim(),
-                color: selectedColor
-            });
+            if (editingCategoryId) {
+                updateIngredientCategory(editingCategoryId, {
+                    name: newCategoryName.trim(),
+                    color: selectedColor
+                });
+            } else {
+                addIngredientCategory({
+                    id: crypto.randomUUID(),
+                    name: newCategoryName.trim(),
+                    color: selectedColor
+                });
+            }
             setIsCategoryModalOpen(false);
+            setEditingCategoryId(null);
             setNewCategoryName('');
             setSelectedColor(COLORS[0]);
+        }
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            const oldIndex = ingredientCategories.findIndex((cat) => cat.id === active.id);
+            const newIndex = ingredientCategories.findIndex((cat) => cat.id === over.id);
+
+            setIngredientCategories(arrayMove(ingredientCategories, oldIndex, newIndex));
         }
     };
 
@@ -278,10 +442,10 @@ export function IngredientsView() {
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1">
                         <button
                             onClick={() => setSelectedCategory(null)}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${selectedCategory === null
+                            className={`w-full text-left pl-9 pr-3 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${selectedCategory === null
                                 ? 'bg-indigo-500/10 text-indigo-400 font-medium border border-indigo-500/20'
                                 : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                                 }`}
@@ -289,56 +453,32 @@ export function IngredientsView() {
                             <Tag size={14} /> Tüm Kategoriler
                         </button>
 
-                        {ingredientCategories.map(cat => (
-                            <div key={cat.id} className="group relative">
-                                <button
-                                    onClick={() => setSelectedCategory(cat.id)}
-                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center gap-2 ${selectedCategory === cat.id
-                                        ? 'bg-indigo-500/10 text-indigo-400 font-medium border border-indigo-500/20'
-                                        : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                                        }`}
-                                >
-                                    <div className="relative">
-                                        <div
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setEditingColorId(editingColorId === cat.id ? null : cat.id);
-                                            }}
-                                            className={`w-3 h-3 rounded-full ${cat.color} hover:ring-2 ring-white/20 transition-all cursor-pointer shrink-0`}
-                                        ></div>
-
-                                        {/* Color Picker Popover */}
-                                        {editingColorId === cat.id && (
-                                            <div
-                                                className="absolute left-0 top-full mt-2 z-50 bg-[#18181b] border border-zinc-800 rounded-xl shadow-2xl p-3 w-48 animate-in fade-in zoom-in-95"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <div className="grid grid-cols-4 gap-2">
-                                                    {COLORS.map((color) => (
-                                                        <button
-                                                            key={color}
-                                                            onClick={() => handleColorUpdate(cat.id, color)}
-                                                            className={`w-8 h-8 rounded-full ${color} hover:scale-110 transition-transform ${cat.color === color ? 'ring-2 ring-white' : ''}`}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {/* Click outside to close helper - simplest way is a fixed inset div */}
-                                        {editingColorId === cat.id && (
-                                            <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setEditingColorId(null); }} />
-                                        )}
-                                    </div>
-                                    <span className="truncate">{cat.name}</span>
-                                </button>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat.id); }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-all p-1"
-                                >
-                                    <Trash2 size={12} />
-                                </button>
-                            </div>
-                        ))}
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <SortableContext
+                                items={ingredientCategories.map(cat => cat.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {ingredientCategories.map(cat => (
+                                    <SortableItem
+                                        key={cat.id}
+                                        id={cat.id}
+                                        cat={cat}
+                                        selectedCategory={selectedCategory}
+                                        onSelect={setSelectedCategory}
+                                        onEdit={handleEditCategory}
+                                        onDelete={handleDeleteCategory}
+                                        editingColorId={editingColorId}
+                                        setEditingColorId={setEditingColorId}
+                                        COLORS={COLORS}
+                                        handleColorUpdate={handleColorUpdate}
+                                    />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
                     </div>
                 </div>
 
@@ -578,7 +718,9 @@ export function IngredientsView() {
             {isCategoryModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-[#18181b] border border-zinc-800 w-full max-w-sm rounded-xl shadow-2xl p-6">
-                        <h3 className="text-lg font-bold text-white mb-4">Yeni Kategori Ekle</h3>
+                        <h3 className="text-lg font-bold text-white mb-4">
+                            {editingCategoryId ? 'Kategoriyi Düzenle' : 'Yeni Kategori Ekle'}
+                        </h3>
                         <form onSubmit={submitAddCategory} className="space-y-4">
                             <div className="space-y-1">
                                 <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Kategori Adı</label>

@@ -108,6 +108,7 @@ export interface AppState {
     addIngredientCategory: (category: IngredientCategory) => void;
     updateIngredientCategory: (id: string, updated: Partial<IngredientCategory>) => void;
     deleteIngredientCategory: (id: string) => void;
+    setIngredientCategories: (categories: IngredientCategory[]) => void;
 
     // Intermediate Products Feature
     intermediateProducts: IntermediateProduct[];
