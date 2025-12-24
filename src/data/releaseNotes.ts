@@ -6,6 +6,17 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: '1.2.5',
+        date: '2025-12-24',
+        changes: [
+            '🧾 Fatura Özeti (Nakit Akışı): Tüm gider ekranlarında KDV oranlarına (%1, %10, %20) göre kırılım ve "Cebinizden Çıkan Gerçek Toplam Nakit" gösterimi eklendi.',
+            '📊 KDV Dahil Toplam Gider: Aylık Bilanço ve Gerçekleşen Hesaplar sayfalarındaki KDV özet bölümüne yeni satır eklendi.',
+            '🧹 Bilanço Sayfa Temizliği: Projeksiyon sayfasındaki şirket ve marka adı göstergesi kaldırıldı, sayfa daha ferah bir görünüme kavuştu.',
+            '🏷️ Reçete Grupları Yönetimi: Reçetelerinizi kategorilere (gruplar) ayırın, grup renklerini belirleyin ve sırasını istediğiniz gibi yönetin.',
+            '📦 Kompakt Ara Ürün Kartları: Ara ürün reçete kartlarının yüksekliği azaltılarak daha fazla ürünün aynı anda ekranda görülmesi sağlandı.'
+        ]
+    },
+    {
         version: '1.2.4',
         date: '2025-12-23',
         changes: [
