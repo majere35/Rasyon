@@ -11,9 +11,9 @@ interface IntermediateProductCardProps {
 export function IntermediateProductCard({ product, onEdit, onDelete }: IntermediateProductCardProps) {
     return (
         <div className="group relative bg-zinc-800/50 border border-zinc-700/50 rounded-2xl overflow-hidden hover:border-orange-500/50 hover:bg-zinc-800/80 transition-all duration-300 hover:shadow-xl hover:shadow-orange-500/10 flex flex-col">
-            {/* Icon Section */}
-            <div className="aspect-square bg-gradient-to-br from-orange-900/30 to-zinc-900 relative overflow-hidden flex items-center justify-center">
-                <Beaker size={48} className="text-orange-500/50 group-hover:text-orange-400/70 transition-colors" />
+            {/* Icon Section (Compact) */}
+            <div className="h-20 bg-gradient-to-br from-orange-900/20 to-zinc-900 relative overflow-hidden flex items-center justify-center border-b border-zinc-700/30">
+                <Beaker size={32} className="text-orange-500/40 group-hover:text-orange-400/60 transition-colors" />
 
                 {/* Actions Overlay */}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded-lg p-1 backdrop-blur-sm">

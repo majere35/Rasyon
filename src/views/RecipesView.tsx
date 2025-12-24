@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Plus, Search, ChefHat, Beaker, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Search, ChefHat, Beaker, ChevronDown, ChevronRight, Tag } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { RecipeCard } from '../components/RecipeCard';
 import { AddRecipeModal } from '../components/AddRecipeModal';
 import { IntermediateProductCard } from '../components/IntermediateProductCard';
 import { AddIntermediateProductModal } from '../components/AddIntermediateProductModal';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { ManageRecipeCategoriesModal } from '../components/ManageRecipeCategoriesModal';
 import type { Recipe, IntermediateProduct } from '../types';
 
 type TabType = 'recipes' | 'intermediate';
@@ -23,6 +24,9 @@ export function RecipesView() {
     // Intermediate product modal states
     const [isAddIntermediateModalOpen, setIsAddIntermediateModalOpen] = useState(false);
     const [editingIntermediateProduct, setEditingIntermediateProduct] = useState<IntermediateProduct | null>(null);
+
+    // Category management
+    const [isManageCategoriesModalOpen, setIsManageCategoriesModalOpen] = useState(false);
 
     // Search
     const [searchQuery, setSearchQuery] = useState('');
@@ -104,16 +108,28 @@ export function RecipesView() {
                     <h2 className="text-3xl font-bold tracking-tight text-white mb-2">Reçeteler</h2>
                     <p className="text-zinc-400">Menünüzdeki ürünlerin maliyetlerini yönetin.</p>
                 </div>
-                <button
-                    onClick={handleAddNew}
-                    className={`inline-flex items-center justify-center gap-2 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg active:scale-95 ${activeTab === 'recipes'
-                        ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'
-                        : 'bg-orange-600 hover:bg-orange-500 shadow-orange-500/20'
-                        }`}
-                >
-                    <Plus size={20} />
-                    {activeTab === 'recipes' ? 'Yeni Reçete' : 'Yeni Ara Ürün'}
-                </button>
+                <div className="flex items-center gap-3">
+                    {activeTab === 'recipes' && (
+                        <button
+                            onClick={() => setIsManageCategoriesModalOpen(true)}
+                            className="inline-flex items-center justify-center gap-2 text-zinc-400 hover:text-white px-4 py-3 rounded-xl font-medium transition-all hover:bg-zinc-800 border border-zinc-800"
+                            title="Grupları Yönet"
+                        >
+                            <Tag className="w-5 h-5" />
+                            <span className="hidden sm:inline">Grupları Yönet</span>
+                        </button>
+                    )}
+                    <button
+                        onClick={handleAddNew}
+                        className={`inline-flex items-center justify-center gap-2 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg active:scale-95 ${activeTab === 'recipes'
+                            ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'
+                            : 'bg-orange-600 hover:bg-orange-500 shadow-orange-500/20'
+                            }`}
+                    >
+                        <Plus size={20} />
+                        {activeTab === 'recipes' ? 'Yeni Reçete' : 'Yeni Ara Ürün'}
+                    </button>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -322,6 +338,11 @@ export function RecipesView() {
                 onConfirm={confirmDelete}
                 onCancel={() => setDeleteId(null)}
                 type="danger"
+            />
+            {/* Manage Categories Modal */}
+            <ManageRecipeCategoriesModal
+                isOpen={isManageCategoriesModalOpen}
+                onClose={() => setIsManageCategoriesModalOpen(false)}
             />
         </div>
     );
