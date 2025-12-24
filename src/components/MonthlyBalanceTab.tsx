@@ -249,6 +249,7 @@ export function MonthlyBalanceTab({ data }: MonthlyBalanceTabProps) {
                     expensesVat={aggregatedData.totalDeductibleVat}
                     carryInVat={carryInVat}
                     stopaj={aggregatedData.totalStopajTax}
+                    totalNetExpenses={totalExpenses}
                 />
 
                 <div className="bg-gradient-to-br from-zinc-900 to-black border border-zinc-800 rounded-2xl p-6 shadow-2xl relative overflow-hidden">

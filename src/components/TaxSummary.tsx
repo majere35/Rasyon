@@ -10,9 +10,10 @@ interface TaxSummaryProps {
     carryInVat?: number;
     stopaj?: number;
     title?: string;
+    totalNetExpenses?: number;
 }
 
-export function TaxSummary({ profit, revenue, expensesVat, carryInVat = 0, stopaj = 0, title }: TaxSummaryProps) {
+export function TaxSummary({ profit, revenue, expensesVat, carryInVat = 0, stopaj = 0, title, totalNetExpenses }: TaxSummaryProps) {
     const { company } = useStore();
 
     const monthlyProfit = profit;
@@ -79,6 +80,15 @@ export function TaxSummary({ profit, revenue, expensesVat, carryInVat = 0, stopa
                         </div>
                     )}
                     <div className="w-full h-px bg-zinc-800/50 my-1"></div>
+
+                    {totalNetExpenses !== undefined && (
+                        <div className="flex justify-between items-center mb-1 text-orange-400 font-bold">
+                            <span>KDV Dahil Toplam Gider</span>
+                            <span className="font-mono text-sm underline decoration-white/20 underline-offset-4">
+                                {formatCurrency(totalNetExpenses + expensesVat)}
+                            </span>
+                        </div>
+                    )}
 
                     {payableVat > 0 ? (
                         <div className="flex justify-between items-end">

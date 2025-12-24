@@ -642,6 +642,7 @@ export function BalanceView() {
                         revenue={monthlyRevenue}
                         expensesVat={totalExpensesVat}
                         stopaj={totalStopaj}
+                        totalNetExpenses={totalExpenses}
                     />
 
                     {/* Main Profit Card (Moved Down & Expanded) */}
