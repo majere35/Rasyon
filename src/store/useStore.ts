@@ -176,9 +176,41 @@ export const useStore = create<AppState>()(
                 };
             }),
 
-            deleteRawIngredient: (id) => set((state) => ({
-                rawIngredients: state.rawIngredients.filter(item => item.id !== id)
-            })),
+            deleteRawIngredient: (id) => set((state) => {
+                // Remove from raw ingredients
+                const newIngredients = state.rawIngredients.filter(item => item.id !== id);
+
+                // Remove from all recipes that use this ingredient
+                const newRecipes = state.recipes.map(recipe => {
+                    const filteredIngredients = recipe.ingredients.filter(ing => ing.rawIngredientId !== id);
+
+                    // If no ingredients were removed, return original recipe
+                    if (filteredIngredients.length === recipe.ingredients.length) {
+                        return recipe;
+                    }
+
+                    // Recalculate total cost after removing ingredient
+                    const newTotalCost = filteredIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+                    // Keep calculatedPrice FIXED, update costMultiplier
+                    let newCostMultiplier = recipe.costMultiplier;
+                    if (newTotalCost > 0 && recipe.calculatedPrice > 0) {
+                        newCostMultiplier = recipe.calculatedPrice / newTotalCost;
+                    }
+
+                    return {
+                        ...recipe,
+                        ingredients: filteredIngredients,
+                        totalCost: newTotalCost,
+                        costMultiplier: newCostMultiplier
+                    };
+                });
+
+                return {
+                    rawIngredients: newIngredients,
+                    recipes: newRecipes
+                };
+            }),
 
             addIngredientCategory: (category) => set((state) => ({
                 ingredientCategories: [...state.ingredientCategories, category]
@@ -194,9 +226,43 @@ export const useStore = create<AppState>()(
                 ingredientCategories: state.ingredientCategories.filter(item => item.id !== id)
             })),
 
-            bulkDeleteRawIngredients: (ids: string[]) => set((state) => ({
-                rawIngredients: state.rawIngredients.filter(item => !ids.includes(item.id))
-            })),
+            bulkDeleteRawIngredients: (ids: string[]) => set((state) => {
+                // Remove from raw ingredients
+                const newIngredients = state.rawIngredients.filter(item => !ids.includes(item.id));
+
+                // Remove from all recipes that use any of these ingredients
+                const newRecipes = state.recipes.map(recipe => {
+                    const filteredIngredients = recipe.ingredients.filter(ing =>
+                        !ing.rawIngredientId || !ids.includes(ing.rawIngredientId)
+                    );
+
+                    // If no ingredients were removed, return original recipe
+                    if (filteredIngredients.length === recipe.ingredients.length) {
+                        return recipe;
+                    }
+
+                    // Recalculate total cost after removing ingredients
+                    const newTotalCost = filteredIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+                    // Keep calculatedPrice FIXED, update costMultiplier
+                    let newCostMultiplier = recipe.costMultiplier;
+                    if (newTotalCost > 0 && recipe.calculatedPrice > 0) {
+                        newCostMultiplier = recipe.calculatedPrice / newTotalCost;
+                    }
+
+                    return {
+                        ...recipe,
+                        ingredients: filteredIngredients,
+                        totalCost: newTotalCost,
+                        costMultiplier: newCostMultiplier
+                    };
+                });
+
+                return {
+                    rawIngredients: newIngredients,
+                    recipes: newRecipes
+                };
+            }),
 
             // --- Intermediate Products Actions ---
             addIntermediateProduct: (product: IntermediateProduct) => set((state) => ({
@@ -244,9 +310,63 @@ export const useStore = create<AppState>()(
                 };
             }),
 
-            deleteIntermediateProduct: (id: string) => set((state) => ({
-                intermediateProducts: state.intermediateProducts.filter(item => item.id !== id)
-            })),
+            deleteIntermediateProduct: (id: string) => set((state) => {
+                // Remove from all recipes that use this intermediate product
+                const newRecipes = state.recipes.map(recipe => {
+                    const filteredIngredients = recipe.ingredients.filter(ing => ing.intermediateProductId !== id);
+
+                    // If no ingredients were removed, return original recipe
+                    if (filteredIngredients.length === recipe.ingredients.length) {
+                        return recipe;
+                    }
+
+                    // Recalculate total cost after removing ingredient
+                    const newTotalCost = filteredIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+
+                    // Keep calculatedPrice FIXED, update costMultiplier
+                    let newCostMultiplier = recipe.costMultiplier;
+                    if (newTotalCost > 0 && recipe.calculatedPrice > 0) {
+                        newCostMultiplier = recipe.calculatedPrice / newTotalCost;
+                    }
+
+                    return {
+                        ...recipe,
+                        ingredients: filteredIngredients,
+                        totalCost: newTotalCost,
+                        costMultiplier: newCostMultiplier
+                    };
+                });
+
+                // Remove from intermediate products that use this intermediate product
+                const newIntermediateProducts = state.intermediateProducts.map(product => {
+                    if (product.id === id) return product; // Skip the one being deleted
+
+                    const filteredIngredients = product.ingredients.filter(ing => ing.intermediateProductId !== id);
+
+                    // If no ingredients were removed, return original product
+                    if (filteredIngredients.length === product.ingredients.length) {
+                        return product;
+                    }
+
+                    // Recalculate total cost
+                    const newTotalCost = filteredIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+                    const newCostPerUnit = product.productionQuantity > 0
+                        ? newTotalCost / product.productionQuantity
+                        : 0;
+
+                    return {
+                        ...product,
+                        ingredients: filteredIngredients,
+                        totalCost: newTotalCost,
+                        costPerUnit: newCostPerUnit
+                    };
+                }).filter(item => item.id !== id); // Final filter to remove deleted product
+
+                return {
+                    intermediateProducts: newIntermediateProducts,
+                    recipes: newRecipes
+                };
+            }),
 
             // Helper for Packaging Costs
             addPackagingCost: (cost) => set((state) => ({ packagingCosts: [...state.packagingCosts, cost] })),
