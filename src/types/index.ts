@@ -25,6 +25,8 @@ export interface RawIngredient {
     packageQuantity?: number;   // Package quantity (350, 9, 5 etc.)
     packageUnit?: 'kg' | 'lt' | 'adet' | 'gr' | 'cl';  // Package unit
     packagePrice?: number;      // Package price
+    // VAT Rate for tax calculations
+    vatRate?: number; // KDV oranı: 0.01 (%1), 0.10 (%10), 0.20 (%20) - Default: 0.01 (Gıda)
 }
 
 export interface Recipe {

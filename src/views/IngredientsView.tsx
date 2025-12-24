@@ -175,7 +175,8 @@ export function IngredientsView() {
         minimumStock: 0,
         packageQuantity: undefined,
         packageUnit: 'gr',
-        packagePrice: undefined
+        packagePrice: undefined,
+        vatRate: 0.01 // Default: %1 (Gıda KDV)
     });
 
     // Delete Modal
@@ -287,7 +288,8 @@ export function IngredientsView() {
             minimumStock: Number(formData.minimumStock),
             packageQuantity: formData.packageQuantity,
             packageUnit: formData.packageUnit as any,
-            packagePrice: formData.packagePrice
+            packagePrice: formData.packagePrice,
+            vatRate: formData.vatRate ?? 0.01
         };
 
         if (editingId) {
@@ -298,7 +300,7 @@ export function IngredientsView() {
         }
 
         // Reset Form but keep category
-        setFormData({ name: '', price: 0, unit: 'kg', minimumStock: 0, packageQuantity: undefined, packageUnit: 'gr', packagePrice: undefined });
+        setFormData({ name: '', price: 0, unit: 'kg', minimumStock: 0, packageQuantity: undefined, packageUnit: 'gr', packagePrice: undefined, vatRate: 0.01 });
         setIsAddMode(false);
     };
 
@@ -310,7 +312,8 @@ export function IngredientsView() {
             minimumStock: ingredient.minimumStock,
             packageQuantity: ingredient.packageQuantity,
             packageUnit: ingredient.packageUnit,
-            packagePrice: ingredient.packagePrice
+            packagePrice: ingredient.packagePrice,
+            vatRate: ingredient.vatRate ?? 0.01
         });
         setEditingId(ingredient.id);
         setSelectedCategory(ingredient.categoryId);
@@ -567,6 +570,18 @@ export function IngredientsView() {
                                             <option value="kg">Kg</option>
                                             <option value="lt">Lt</option>
                                             <option value="adet">Adet</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1 w-24">
+                                        <label className="text-xs font-semibold text-indigo-300 ml-1">KDV</label>
+                                        <select
+                                            value={formData.vatRate}
+                                            onChange={e => setFormData({ ...formData, vatRate: parseFloat(e.target.value) })}
+                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-white focus:border-indigo-500 outline-none text-sm h-[38px]"
+                                        >
+                                            <option value={0.01}>%1</option>
+                                            <option value={0.10}>%10</option>
+                                            <option value={0.20}>%20</option>
                                         </select>
                                     </div>
                                 </div>

@@ -53,7 +53,8 @@ export function BalanceView() {
         daysWorkedInMonth,
         setDaysWorked,
         company,
-        toggleConfig
+        toggleConfig,
+        rawIngredients
     } = useStore();
 
     // --- State ---
@@ -120,6 +121,26 @@ export function BalanceView() {
     const monthlyPackageItems = totalDailyPackageItems * daysWorkedInMonth;
     const monthlyPackagingCost = monthlyPackageItems * packagingUnitCost;
 
+    // --- Calculate Ingredient VAT based on RawIngredient vatRate ---
+    const totalDailyIngredientsVat = salesTargets.reduce((sum, target) => {
+        const recipe = recipes.find(r => r.id === target.recipeId);
+        if (!recipe) return sum;
+        const totalQty = (target.dailyTarget || 0) + (target.packageDailyTarget || 0);
+
+        // For each ingredient in the recipe, find its rawIngredient and use its vatRate
+        const recipeIngredientsVat = recipe.ingredients.reduce((vatSum, ingredient) => {
+            if (!ingredient.rawIngredientId) return vatSum;
+            const rawIng = rawIngredients.find(ri => ri.id === ingredient.rawIngredientId);
+            const vatRate = rawIng?.vatRate ?? 0.01; // Default %1 for food
+            const ingredientCost = ingredient.quantity * ingredient.price;
+            return vatSum + (ingredientCost * vatRate);
+        }, 0);
+
+        return sum + (recipeIngredientsVat * totalQty);
+    }, 0);
+    const monthlyIngredientsVat = totalDailyIngredientsVat * daysWorkedInMonth;
+
+
 
     // --- Helper: Get Calculated Amount for Expense ---
     const getCalculatedAmount = (expense: Expense): number => {
@@ -166,7 +187,7 @@ export function BalanceView() {
     }));
 
     const totalExpenses = allExpensesWithCalc.reduce((sum, e) => sum + e.finalAmount, 0);
-    const totalExpensesVat = allExpensesWithCalc.reduce((sum, e) => sum + e.finalVat, 0);
+    const totalExpensesVat = allExpensesWithCalc.reduce((sum, e) => sum + e.finalVat, 0) + monthlyIngredientsVat;
     const netProfit = monthlyRevenue - totalExpenses;
 
     // --- Stopaj Calculation for Summary ---
