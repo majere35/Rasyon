@@ -29,6 +29,7 @@ export const useStore = create<AppState>()(
             // Ingredients Feature Defaults
             rawIngredients: [],
             ingredientCategories: [],
+            recipeCategories: [],
 
             // Intermediate Products Feature
             intermediateProducts: [],
@@ -92,6 +93,17 @@ export const useStore = create<AppState>()(
                         { id: 'cat_packaging', name: 'Ambalaj', color: 'bg-zinc-500' },
                     ];
                     return { expenses: defaults, ingredientCategories: defaultCats };
+                }
+
+                // Initialize Recipe Categories if empty
+                if (state.recipeCategories.length === 0) {
+                    const defaultRecipeCats: any[] = [
+                        { id: 'rcat_burgers', name: 'Burgerler', color: 'bg-orange-500' },
+                        { id: 'rcat_sides', name: 'Yan Ürünler', color: 'bg-yellow-500' },
+                        { id: 'rcat_drinks', name: 'İçecekler', color: 'bg-blue-500' },
+                        { id: 'rcat_other', name: 'Diğer', color: 'bg-zinc-500' },
+                    ];
+                    return { expenses: defaults, recipeCategories: defaultRecipeCats };
                 }
 
                 return { expenses: defaults };
@@ -404,6 +416,24 @@ export const useStore = create<AppState>()(
             deleteMonthlyData: (monthStr: string) => set((state) => ({
                 monthlyClosings: state.monthlyClosings.filter(m => m.monthStr !== monthStr)
             })),
+
+            addRecipeCategory: (category) => set((state) => ({
+                recipeCategories: [...state.recipeCategories, category]
+            })),
+
+            updateRecipeCategory: (id, updated) => set((state) => ({
+                recipeCategories: state.recipeCategories.map(item =>
+                    item.id === id ? { ...item, ...updated } : item
+                )
+            })),
+
+            deleteRecipeCategory: (id) => set((state) => ({
+                recipeCategories: state.recipeCategories.filter(item => item.id !== id),
+                // Optionally clear categoryId from recipes that were in this category
+                recipes: state.recipes.map(r => r.categoryId === id ? { ...r, categoryId: undefined } : r)
+            })),
+
+            setRecipeCategories: (categories) => set({ recipeCategories: categories }),
         }),
         {
             name: 'resto-app-storage',
@@ -417,6 +447,7 @@ export const useStore = create<AppState>()(
                 packagingCosts: state.packagingCosts,
                 rawIngredients: state.rawIngredients,
                 ingredientCategories: state.ingredientCategories,
+                recipeCategories: state.recipeCategories,
                 intermediateProducts: state.intermediateProducts,
                 monthlyClosings: state.monthlyClosings, // Persist monthly data
                 onlineCommissionRate: state.onlineCommissionRate, // Persist commission rate

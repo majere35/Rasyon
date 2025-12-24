@@ -37,6 +37,7 @@ export interface Recipe {
     costMultiplier: number;
     calculatedPrice: number;
     image?: string;
+    categoryId?: string;
 }
 
 export interface IntermediateProduct {
@@ -136,6 +137,13 @@ export interface AppState {
 
     setDaysWorked: (days: number) => void;
     initializeDefaults: () => void;
+
+    // Recipe Categories
+    recipeCategories: IngredientCategory[];
+    addRecipeCategory: (category: IngredientCategory) => void;
+    updateRecipeCategory: (id: string, updated: Partial<IngredientCategory>) => void;
+    deleteRecipeCategory: (id: string) => void;
+    setRecipeCategories: (categories: IngredientCategory[]) => void;
 
     // Monthly Accounting (Local Only Mode)
     monthlyClosings: MonthlyMonthData[]; // All monthly data stored locally

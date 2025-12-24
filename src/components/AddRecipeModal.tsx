@@ -12,8 +12,9 @@ interface AddRecipeModalProps {
 }
 
 export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalProps) {
-    const { addRecipe, updateRecipe, rawIngredients, recipes, intermediateProducts } = useStore();
+    const { addRecipe, updateRecipe, rawIngredients, recipes, intermediateProducts, recipeCategories } = useStore();
     const [name, setName] = useState('');
+    const [categoryId, setCategoryId] = useState<string>('');
     const [ingredients, setIngredients] = useState<Omit<Ingredient, 'id'>[]>([]);
     const [costMultiplier, setCostMultiplier] = useState(2.5);
     const [image, setImage] = useState<string>('');
@@ -50,12 +51,14 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
     useEffect(() => {
         if (editRecipe) {
             setName(editRecipe.name);
+            setCategoryId(editRecipe.categoryId || '');
             setIngredients(editRecipe.ingredients);
             setCostMultiplier(editRecipe.costMultiplier);
             setImage(editRecipe.image || '');
         } else {
             setName('');
-            setIngredients([{ name: '', quantity: 1, unit: 'adet', price: 0 }]);
+            setCategoryId('');
+            setIngredients([{ name: '', quantity: 0, unit: 'kg', price: 0 }]);
             setCostMultiplier(2.5);
             setImage('');
         }
@@ -178,7 +181,8 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
             totalCost,
             costMultiplier,
             calculatedPrice,
-            image
+            image,
+            categoryId: categoryId || undefined
         };
 
         if (editRecipe) {
@@ -291,6 +295,20 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                     placeholder="Örn: Gravity Burger"
                                     className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500 transition-colors"
                                 />
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Kategori</label>
+                                <select
+                                    value={categoryId}
+                                    onChange={(e) => setCategoryId(e.target.value)}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-white outline-none focus:border-indigo-500 text-sm h-[42px]"
+                                >
+                                    <option value="">Kategori Seçin...</option>
+                                    {recipeCategories.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             {/* Multiplier & Pricing - Compact Box */}
