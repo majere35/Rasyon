@@ -58,36 +58,36 @@ export function RecipeCard({ recipe, onEdit, onDelete }: RecipeCardProps) {
                     <h3 className="font-bold text-base text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
                         {recipe.name}
                     </h3>
-                    <div className="text-xs text-zinc-500">
+                    <div className="text-[13px] text-zinc-500">
                         {recipe.ingredients.length} Malzeme
                     </div>
                 </div>
 
                 <div className="space-y-2 mt-auto">
-                    <div className="flex justify-between items-center text-xs">
+                    <div className="flex justify-between items-center text-[13px]">
                         <span className="text-zinc-500">Maliyet</span>
                         <span className="font-mono text-zinc-300">{formatCurrency(recipe.totalCost)}</span>
                     </div>
 
-                    <div className="flex justify-between items-center text-xs border-t border-zinc-700/50 pt-2">
+                    <div className="flex justify-between items-center text-[13px] border-t border-zinc-700/50 pt-2">
                         <div>
                             <span className="text-zinc-500">Satış</span>
-                            <span className="text-[9px] text-green-500/60 ml-0.5">(KDV Dahil)</span>
+                            <span className="text-[10px] text-green-500/60 ml-0.5">(KDV Dahil)</span>
                         </div>
                         <div className="text-right">
                             <span className="font-mono text-green-400 font-bold">{formatCurrency(recipe.calculatedPrice)}</span>
-                            <div className="text-[9px] text-zinc-500 font-mono">Net: {formatCurrency(netPrice)}</div>
+                            <div className="text-[11px] text-zinc-500 font-mono mt-0.5">Net: {formatCurrency(netPrice)}</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-zinc-900/40 px-3 py-1.5 flex justify-between items-center text-[10px] md:text-xs">
+            <div className="bg-zinc-900/40 px-3 py-1.5 flex justify-between items-center text-[11px] md:text-xs">
                 <span className="bg-zinc-700/30 px-1.5 py-0.5 rounded text-zinc-400">
                     x{formatNumber(recipe.costMultiplier || 0)}
                 </span>
                 <div className="flex items-center gap-1 text-indigo-400 font-medium">
-                    <TrendingUp size={12} />
+                    <TrendingUp size={14} />
                     %{profitMargin}
                 </div>
             </div>
