@@ -98,7 +98,8 @@ export const useStore = create<AppState>()(
                 // Initialize Recipe Categories if empty
                 if (state.recipeCategories.length === 0) {
                     const defaultRecipeCats: any[] = [
-                        { id: 'rcat_burgers', name: 'Burgerler', color: 'bg-orange-500' },
+                        { id: 'rcat_et_burgers', name: 'Et Burger Menüler', color: 'bg-red-500' },
+                        { id: 'rcat_tavuk_burgers', name: 'Tavuk Burger Menüler', color: 'bg-orange-500' },
                         { id: 'rcat_sides', name: 'Yan Ürünler', color: 'bg-yellow-500' },
                         { id: 'rcat_drinks', name: 'İçecekler', color: 'bg-blue-500' },
                         { id: 'rcat_other', name: 'Diğer', color: 'bg-zinc-500' },
@@ -148,26 +149,53 @@ export const useStore = create<AppState>()(
                     item.id === id ? updated : item
                 );
 
+                // Auto-update linked intermediate products
+                const newIntermediateProducts = state.intermediateProducts.map(product => {
+                    const needsUpdate = product.ingredients.some(i => i.rawIngredientId === id);
+                    if (!needsUpdate) return product;
+
+                    const newIngredientsList = product.ingredients.map(ing => {
+                        if (ing.rawIngredientId === id) {
+                            return {
+                                ...ing,
+                                name: updated.name,
+                                price: updated.price,
+                                unit: updated.unit
+                            };
+                        }
+                        return ing;
+                    });
+
+                    const newTotalCost = newIngredientsList.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+                    const newCostPerUnit = product.productionQuantity > 0 ? newTotalCost / product.productionQuantity : 0;
+
+                    return {
+                        ...product,
+                        ingredients: newIngredientsList,
+                        totalCost: newTotalCost,
+                        costPerUnit: newCostPerUnit
+                    };
+                });
+
                 // Auto-update linked recipes
-                let recipeUpdated = false;
                 const newRecipes = state.recipes.map(recipe => {
                     const needsUpdate = recipe.ingredients.some(i => i.rawIngredientId === id);
                     if (!needsUpdate) return recipe;
 
-                    recipeUpdated = true;
                     const newRecipeIngredients = recipe.ingredients.map(ing => {
                         if (ing.rawIngredientId === id) {
-                            return { ...ing, price: updated.price, unit: updated.unit };
+                            return {
+                                ...ing,
+                                name: updated.name,
+                                price: updated.price,
+                                unit: updated.unit
+                            };
                         }
                         return ing;
                     });
 
                     // Calculate new total cost
                     const newTotalCost = newRecipeIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-
-                    // LOGIC CHANGE: Keep calculatedPrice FIXED, update costMultiplier
-                    // Old Logic: costMultiplier fixed, calculatedPrice changes (implicitly via UI or simple recalc)
-                    // New Logic: calculatedPrice fixed, costMultiplier = calculatedPrice / newTotalCost
 
                     let newCostMultiplier = recipe.costMultiplier;
                     if (newTotalCost > 0 && recipe.calculatedPrice > 0) {
@@ -184,13 +212,30 @@ export const useStore = create<AppState>()(
 
                 return {
                     rawIngredients: newIngredients,
-                    recipes: recipeUpdated ? newRecipes : state.recipes
+                    intermediateProducts: newIntermediateProducts,
+                    recipes: newRecipes
                 };
             }),
 
             deleteRawIngredient: (id) => set((state) => {
                 // Remove from raw ingredients
                 const newIngredients = state.rawIngredients.filter(item => item.id !== id);
+
+                // Remove from all intermediate products
+                const newIntermediateProducts = state.intermediateProducts.map(product => {
+                    const filteredIngredients = product.ingredients.filter(ing => ing.rawIngredientId !== id);
+                    if (filteredIngredients.length === product.ingredients.length) return product;
+
+                    const newTotalCost = filteredIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+                    const newCostPerUnit = product.productionQuantity > 0 ? newTotalCost / product.productionQuantity : 0;
+
+                    return {
+                        ...product,
+                        ingredients: filteredIngredients,
+                        totalCost: newTotalCost,
+                        costPerUnit: newCostPerUnit
+                    };
+                });
 
                 // Remove from all recipes that use this ingredient
                 const newRecipes = state.recipes.map(recipe => {
@@ -220,6 +265,7 @@ export const useStore = create<AppState>()(
 
                 return {
                     rawIngredients: newIngredients,
+                    intermediateProducts: newIntermediateProducts,
                     recipes: newRecipes
                 };
             }),
@@ -287,30 +333,73 @@ export const useStore = create<AppState>()(
                     item.id === id ? updated : item
                 );
 
-                // Auto-update linked recipes (similar to rawIngredient logic)
-                let recipeUpdated = false;
+                // Update intermediate products that use this intermediate product
+                const updatedIntermediateProducts = newProducts.map(product => {
+                    if (product.id === id) return product; // Skip the one we just updated
+
+                    const needsUpdate = product.ingredients.some(i => i.intermediateProductId === id);
+                    if (!needsUpdate) return product;
+
+                    const newIngredients = product.ingredients.map(ing => {
+                        if (ing.intermediateProductId === id) {
+                            // Update name and price and unit from the updated source
+                            let newPrice = updated.costPerUnit;
+                            let newUnit = updated.productionUnit;
+
+                            if (ing.unit === 'adet' && updated.portionWeight && updated.productionUnit !== 'adet') {
+                                const factor = updated.portionUnit === 'cl' ? 100 : 1000;
+                                newPrice = updated.costPerUnit * (updated.portionWeight / factor);
+                                newUnit = 'adet';
+                            }
+
+                            return {
+                                ...ing,
+                                name: updated.name,
+                                price: newPrice,
+                                unit: newUnit
+                            };
+                        }
+                        return ing;
+                    });
+
+                    const newTotalCost = newIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+                    const newCostPerUnit = product.productionQuantity > 0 ? newTotalCost / product.productionQuantity : 0;
+
+                    return {
+                        ...product,
+                        ingredients: newIngredients,
+                        totalCost: newTotalCost,
+                        costPerUnit: newCostPerUnit
+                    };
+                });
+
+                // Auto-update linked recipes
                 const newRecipes = state.recipes.map(recipe => {
                     const needsUpdate = recipe.ingredients.some(i => i.intermediateProductId === id);
                     if (!needsUpdate) return recipe;
 
-                    recipeUpdated = true;
                     const newRecipeIngredients = recipe.ingredients.map(ing => {
                         if (ing.intermediateProductId === id) {
-                            // If user already chose 'adet' and we have portionWeight, preserve it and update portion price
+                            let newPrice = updated.costPerUnit;
+                            let newUnit = updated.productionUnit;
+
                             if (ing.unit === 'adet' && updated.portionWeight && updated.productionUnit !== 'adet') {
                                 const factor = updated.portionUnit === 'cl' ? 100 : 1000;
-                                const portionPrice = updated.costPerUnit * (updated.portionWeight / factor);
-                                return { ...ing, price: portionPrice };
+                                newPrice = updated.costPerUnit * (updated.portionWeight / factor);
+                                newUnit = 'adet';
                             }
-                            // Otherwise, fall back to default production unit and unit price (kg/lt)
-                            return { ...ing, price: updated.costPerUnit, unit: updated.productionUnit };
+                            return {
+                                ...ing,
+                                name: updated.name,
+                                price: newPrice,
+                                unit: newUnit
+                            };
                         }
                         return ing;
                     });
 
                     const newTotalCost = newRecipeIngredients.reduce((sum, item) => sum + (item.quantity * item.price), 0);
 
-                    // Keep calculatedPrice FIXED, update costMultiplier
                     let newCostMultiplier = recipe.costMultiplier;
                     if (newTotalCost > 0 && recipe.calculatedPrice > 0) {
                         newCostMultiplier = recipe.calculatedPrice / newTotalCost;
@@ -325,8 +414,8 @@ export const useStore = create<AppState>()(
                 });
 
                 return {
-                    intermediateProducts: newProducts,
-                    recipes: recipeUpdated ? newRecipes : state.recipes
+                    intermediateProducts: updatedIntermediateProducts,
+                    recipes: newRecipes
                 };
             }),
 

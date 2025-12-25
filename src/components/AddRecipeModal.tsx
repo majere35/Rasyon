@@ -1,9 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Save, Upload, Image as ImageIcon, Link, Copy } from 'lucide-react';
+import { X, Plus, Trash2, Save, Upload, Image as ImageIcon, Link, Copy, GripVertical, Pencil, Search } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { NumberInput } from './NumberInput';
 import { toTitleCase, getNetPrice, formatCurrency } from '../lib/utils';
 import type { Recipe, Ingredient } from '../types';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface AddRecipeModalProps {
     isOpen: boolean;
@@ -15,7 +32,7 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
     const { addRecipe, updateRecipe, rawIngredients, recipes, intermediateProducts, recipeCategories } = useStore();
     const [name, setName] = useState('');
     const [categoryId, setCategoryId] = useState<string>('');
-    const [ingredients, setIngredients] = useState<Omit<Ingredient, 'id'>[]>([]);
+    const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [costMultiplier, setCostMultiplier] = useState(2.5);
     const [image, setImage] = useState<string>('');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,13 +69,13 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
         if (editRecipe) {
             setName(editRecipe.name);
             setCategoryId(editRecipe.categoryId || '');
-            setIngredients(editRecipe.ingredients);
+            setIngredients(editRecipe.ingredients.map(ing => ({ ...ing, id: ing.id || crypto.randomUUID() })));
             setCostMultiplier(editRecipe.costMultiplier);
             setImage(editRecipe.image || '');
         } else {
             setName('');
             setCategoryId('');
-            setIngredients([{ name: '', quantity: 0, unit: 'kg', price: 0 }]);
+            setIngredients([{ id: crypto.randomUUID(), name: '', quantity: 0, unit: 'kg', price: 0 }]);
             setCostMultiplier(2.5);
             setImage('');
         }
@@ -94,12 +111,29 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
 
     const addIngredientRow = () => {
         // Adding 0 cost item won't change total or multiplier
-        setIngredientsWithFixedPrice([...ingredients, { name: '', quantity: 0, unit: 'kg', price: 0 }]);
+        setIngredientsWithFixedPrice([...ingredients, { id: crypto.randomUUID(), name: '', quantity: 0, unit: 'kg', price: 0 }]);
     };
 
     const removeIngredientRow = (index: number) => {
         const newIngredients = ingredients.filter((_, i) => i !== index);
         setIngredientsWithFixedPrice(newIngredients);
+    };
+
+    const handleEditIngredient = (id: string) => {
+        const index = ingredients.findIndex(ing => ing.id === id);
+        if (index === -1) return;
+
+        const newIngredients = [...ingredients];
+        newIngredients[index] = {
+            ...newIngredients[index],
+            rawIngredientId: undefined,
+            intermediateProductId: undefined
+        };
+        setIngredientsWithFixedPrice(newIngredients);
+        // Trigger autocomplete for the now-editable field
+        setActiveSearchIndex(index);
+        setSearchQuery(''); // Clear query to show all options initially
+        setShowSuggestions(true);
     };
 
     const updateIngredient = (index: number, field: keyof Omit<Ingredient, 'id'> | 'rawIngredientId', value: string | number | null) => {
@@ -137,7 +171,10 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
         setShowSuggestions(true);
     };
 
-    const selectRawIngredient = (index: number, rawIngredient: any) => {
+    const selectRawIngredient = (id: string, rawIngredient: any) => {
+        const index = ingredients.findIndex(ing => ing.id === id);
+        if (index === -1) return;
+
         const newIngredients = [...ingredients];
         newIngredients[index] = {
             ...newIngredients[index],
@@ -152,7 +189,10 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
         setActiveSearchIndex(null);
     };
 
-    const selectIntermediateProduct = (index: number, product: any) => {
+    const selectIntermediateProduct = (id: string, product: any) => {
+        const index = ingredients.findIndex(ing => ing.id === id);
+        if (index === -1) return;
+
         const newIngredients = [...ingredients];
 
         // If it has portionWeight, default to 'adet' and calculate portion price
@@ -191,6 +231,29 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
         return !!item.rawIngredientId || !!item.intermediateProductId;
     };
 
+    const handleCopyRecipe = () => {
+        if (!copySourceId) return;
+
+        const sourceRecipe = recipes.find(r => r.id === copySourceId);
+        if (sourceRecipe) {
+            // Map ingredients to new objects to avoid reference issues
+            // but PRESERVE rawIngredientId and intermediateProductId to keep links
+            const copiedIngredients = sourceRecipe.ingredients.map(ing => ({
+                id: crypto.randomUUID(),
+                name: ing.name,
+                quantity: ing.quantity,
+                unit: ing.unit,
+                price: Number(ing.price.toFixed(4)), // Fix long float precision issues
+                rawIngredientId: ing.rawIngredientId,
+                intermediateProductId: ing.intermediateProductId
+            }));
+
+            setIngredientsWithFixedPrice(copiedIngredients);
+            setIsCopyModalOpen(false);
+            setCopySourceId('');
+        }
+    };
+
 
 
     const calculateTotalCost = () => {
@@ -221,27 +284,24 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
         onClose();
     };
 
-    const handleCopyRecipe = () => {
-        if (!copySourceId) return;
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
 
-        const sourceRecipe = recipes.find(r => r.id === copySourceId);
-        if (sourceRecipe) {
-            // Map ingredients to new objects to avoid reference issues
-            // but PRESERVE rawIngredientId and intermediateProductId to keep links
-            const copiedIngredients = sourceRecipe.ingredients.map(ing => ({
-                name: ing.name,
-                quantity: ing.quantity,
-                unit: ing.unit,
-                price: Number(ing.price.toFixed(4)), // Fix long float precision issues
-                rawIngredientId: ing.rawIngredientId,
-                intermediateProductId: ing.intermediateProductId
-            }));
-
-            setIngredientsWithFixedPrice(copiedIngredients);
-            setIsCopyModalOpen(false);
-            setCopySourceId('');
+        if (over && active.id !== over.id) {
+            setIngredients((items) => {
+                const oldIndex = items.findIndex((i) => i.id === active.id);
+                const newIndex = items.findIndex((i) => i.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
         }
     };
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     if (!isOpen) return null;
 
@@ -426,163 +486,51 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-zinc-900/80 text-zinc-500 font-medium sticky top-0 z-10 backdrop-blur-sm">
                                         <tr>
-                                            <th className="px-3 py-2 text-xs uppercase tracking-wider pl-4">Malzeme</th>
-                                            <th className="px-2 py-2 w-32 text-xs uppercase tracking-wider">Miktar</th>
-                                            <th className="px-2 py-2 w-20 text-xs uppercase tracking-wider">Birim</th>
-                                            <th className="px-2 py-2 w-24 text-xs uppercase tracking-wider">Birim Fiyat</th>
-                                            <th className="px-2 py-2 w-24 text-xs uppercase tracking-wider text-right">Tutar</th>
-                                            <th className="px-2 py-2 w-10"></th>
+                                            <th className="px-3 py-2 text-xs uppercase tracking-wider pl-4 w-8"></th>
+                                            <th className="px-3 py-2 text-xs uppercase tracking-wider">Malzeme</th>
+                                            <th className="px-2 py-2 w-16 text-xs uppercase tracking-wider">Miktar</th>
+                                            <th className="px-2 py-2 w-14 text-xs uppercase tracking-wider">Birim</th>
+                                            <th className="px-2 py-2 w-20 text-xs uppercase tracking-wider">Birim Fiyat</th>
+                                            <th className="px-2 py-2 w-18 text-xs uppercase tracking-wider text-right">Tutar</th>
+                                            <th className="px-2 py-2 w-12"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-800/50">
-                                        {ingredients.map((item, index) => (
-                                            <tr key={index} className="group hover:bg-zinc-800/30 transition-colors">
-                                                <td className="p-2 pl-4 relative">
-                                                    <div className="relative">
-                                                        <input
-                                                            type="text"
-                                                            value={item.name}
-                                                            onChange={(e) => handleIngredientSearch(index, e.target.value)}
-                                                            onFocus={() => {
-                                                                if (!isIngredientLinked(item)) {
-                                                                    setActiveSearchIndex(index);
-                                                                    setSearchQuery(item.name);
-                                                                    setShowSuggestions(true);
-                                                                }
-                                                            }}
-                                                            readOnly={isIngredientLinked(item)}
-                                                            placeholder="Malzeme adı..."
-                                                            className={`w-full bg-transparent border-dashed border-b p-0 text-sm pb-1 focus:ring-0 ${item.intermediateProductId
-                                                                ? 'text-orange-400 font-medium border-transparent'
-                                                                : item.rawIngredientId
-                                                                    ? 'text-indigo-400 font-medium border-transparent'
-                                                                    : 'text-zinc-200 border-zinc-700 placeholder-zinc-700 focus:border-indigo-500'
-                                                                }`}
-                                                        />
-                                                        {item.rawIngredientId && (
-                                                            <Link size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-indigo-500/50" />
-                                                        )}
-                                                        {item.intermediateProductId && (
-                                                            <Link size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-orange-500/50" />
-                                                        )}
-                                                    </div>
-
-                                                    {/* Auto-complete Dropdown */}
-                                                    {showSuggestions && activeSearchIndex === index && !isIngredientLinked(item) && (
-                                                        <div ref={searchRef} className="absolute left-0 top-full mt-1 w-72 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-64 overflow-y-auto">
-                                                            {/* Intermediate Products Section */}
-                                                            {filteredIntermediateProducts.length > 0 && (
-                                                                <>
-                                                                    <div className="px-3 py-1.5 bg-orange-500/10 border-b border-zinc-700 text-[10px] font-semibold text-orange-400 uppercase tracking-wider">
-                                                                        Ara Ürünler
-                                                                    </div>
-                                                                    {filteredIntermediateProducts.map(ip => (
-                                                                        <div
-                                                                            key={ip.id}
-                                                                            onClick={() => selectIntermediateProduct(index, ip)}
-                                                                            className="px-3 py-2 hover:bg-orange-500/10 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group border-l-2 border-transparent hover:border-orange-500"
-                                                                        >
-                                                                            <span className="text-orange-300">{ip.name}</span>
-                                                                            <span className="text-xs text-orange-500/70 font-mono group-hover:text-orange-400">
-                                                                                {ip.costPerUnit.toFixed(2)}₺/{ip.productionUnit}
-                                                                            </span>
-                                                                        </div>
-                                                                    ))}
-                                                                </>
-                                                            )}
-
-                                                            {/* Raw Ingredients Section */}
-                                                            {filteredRawIngredients.length > 0 && (
-                                                                <>
-                                                                    <div className="px-3 py-1.5 bg-indigo-500/10 border-b border-zinc-700 text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">
-                                                                        Hammaddeler
-                                                                    </div>
-                                                                    {filteredRawIngredients.map(ri => (
-                                                                        <div
-                                                                            key={ri.id}
-                                                                            onClick={() => selectRawIngredient(index, ri)}
-                                                                            className="px-3 py-2 hover:bg-indigo-500/10 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group border-l-2 border-transparent hover:border-indigo-500"
-                                                                        >
-                                                                            <span>{ri.name}</span>
-                                                                            <span className="text-xs text-zinc-500 font-mono group-hover:text-zinc-400">
-                                                                                {ri.price.toFixed(2)}₺/{ri.unit}
-                                                                            </span>
-                                                                        </div>
-                                                                    ))}
-                                                                </>
-                                                            )}
-
-                                                            {/* No Results */}
-                                                            {filteredRawIngredients.length === 0 && filteredIntermediateProducts.length === 0 && (
-                                                                <div className="px-3 py-2 text-xs text-zinc-500">Sonuç bulunamadı</div>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="p-2">
-                                                    <NumberInput
-                                                        value={item.quantity}
-                                                        onChange={(val) => updateIngredient(index, 'quantity', val)}
-                                                        className="w-full"
-                                                        placeholder="0"
-                                                        step={0.001}
+                                        <DndContext
+                                            sensors={sensors}
+                                            collisionDetection={closestCenter}
+                                            onDragEnd={handleDragEnd}
+                                        >
+                                            <SortableContext
+                                                items={ingredients.map(i => i.id)}
+                                                strategy={verticalListSortingStrategy}
+                                            >
+                                                {ingredients.map((item, index) => (
+                                                    <SortableIngredientRow
+                                                        key={item.id}
+                                                        item={item}
+                                                        index={index}
+                                                        isIngredientLinked={isIngredientLinked}
+                                                        handleIngredientSearch={handleIngredientSearch}
+                                                        setActiveSearchIndex={setActiveSearchIndex}
+                                                        setSearchQuery={setSearchQuery}
+                                                        setShowSuggestions={setShowSuggestions}
+                                                        updateIngredient={updateIngredient}
+                                                        removeIngredientRow={removeIngredientRow}
+                                                        handleEditIngredient={handleEditIngredient}
+                                                        showSuggestions={showSuggestions}
+                                                        activeSearchIndex={activeSearchIndex}
+                                                        searchRef={searchRef}
+                                                        filteredIntermediateProducts={filteredIntermediateProducts}
+                                                        filteredRawIngredients={filteredRawIngredients}
+                                                        selectIntermediateProduct={selectIntermediateProduct}
+                                                        selectRawIngredient={selectRawIngredient}
+                                                        intermediateProducts={intermediateProducts}
+                                                        searchQuery={searchQuery}
                                                     />
-                                                </td>
-                                                <td className="p-2">
-                                                    {item.rawIngredientId || (item.intermediateProductId && !intermediateProducts.find(p => p.id === item.intermediateProductId)?.portionWeight) ? (
-                                                        <div className={`text-sm px-1 py-1 ${item.intermediateProductId ? 'text-orange-400' : 'text-zinc-400'}`}>{item.unit}</div>
-                                                    ) : (
-                                                        <select
-                                                            value={item.unit}
-                                                            onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
-                                                            className="w-full bg-zinc-800/50 rounded px-1 py-1 text-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 text-xs"
-                                                        >
-                                                            {item.intermediateProductId ? (
-                                                                <>
-                                                                    <option value="adet">Adet</option>
-                                                                    <option value={intermediateProducts.find(p => p.id === item.intermediateProductId)?.productionUnit}>
-                                                                        {intermediateProducts.find(p => p.id === item.intermediateProductId)?.productionUnit}
-                                                                    </option>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <option value="adet">Adet</option>
-                                                                    <option value="kg">Kg</option>
-                                                                    <option value="gr">Gr</option>
-                                                                    <option value="lt">Lt</option>
-                                                                    <option value="cl">Cl</option>
-                                                                </>
-                                                            )}
-                                                        </select>
-                                                    )}
-                                                </td>
-                                                <td className="p-2">
-                                                    {isIngredientLinked(item) ? (
-                                                        <div className={`font-mono text-sm px-1 opacity-70 cursor-not-allowed ${item.intermediateProductId ? 'text-orange-400' : 'text-zinc-400'}`}>
-                                                            {item.price.toFixed(2)}
-                                                        </div>
-                                                    ) : (
-                                                        <NumberInput
-                                                            value={item.price}
-                                                            onChange={(val) => updateIngredient(index, 'price', val)}
-                                                            className="w-full"
-                                                            placeholder="0.00"
-                                                            step={0.001}
-                                                        />
-                                                    )}                                                </td>
-                                                <td className="p-2 text-right font-mono text-zinc-400 text-sm">
-                                                    {(item.quantity * item.price).toFixed(2)}
-                                                </td>
-                                                <td className="p-2 text-center">
-                                                    <button
-                                                        onClick={() => removeIngredientRow(index)}
-                                                        className="text-zinc-600 hover:text-red-400 transition-colors p-1"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                ))}
+                                            </SortableContext>
+                                        </DndContext>
                                         {ingredients.length === 0 && (
                                             <tr>
                                                 <td colSpan={6} className="py-8 text-center text-zinc-600 text-sm">
@@ -675,5 +623,261 @@ export function AddRecipeModal({ isOpen, onClose, editRecipe }: AddRecipeModalPr
                 </div>
             )}
         </div>
+    );
+}
+
+interface SortableIngredientRowProps {
+    item: Ingredient;
+    index: number;
+    isIngredientLinked: (item: Ingredient) => boolean;
+    handleIngredientSearch: (index: number, query: string) => void;
+    setActiveSearchIndex: (index: number | null) => void;
+    setSearchQuery: (query: string) => void;
+    setShowSuggestions: (show: boolean) => void;
+    updateIngredient: (index: number, field: any, value: any) => void;
+    removeIngredientRow: (index: number) => void;
+    handleEditIngredient: (id: string) => void;
+    showSuggestions: boolean;
+    activeSearchIndex: number | null;
+    searchRef: React.RefObject<HTMLDivElement | null>;
+    filteredIntermediateProducts: any[];
+    filteredRawIngredients: any[];
+    selectIntermediateProduct: (id: string, product: any) => void;
+    selectRawIngredient: (id: string, rawIngredient: any) => void;
+    intermediateProducts: any[];
+    searchQuery: string;
+}
+
+function SortableIngredientRow({
+    item,
+    index,
+    isIngredientLinked,
+    handleIngredientSearch,
+    setActiveSearchIndex,
+    setSearchQuery,
+    setShowSuggestions,
+    updateIngredient,
+    removeIngredientRow,
+    handleEditIngredient,
+    showSuggestions,
+    activeSearchIndex,
+    searchRef,
+    filteredIntermediateProducts,
+    filteredRawIngredients,
+    selectIntermediateProduct,
+    selectRawIngredient,
+    intermediateProducts,
+    searchQuery
+}: SortableIngredientRowProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging
+    } = useSortable({ id: item.id });
+
+    const zIndex = isDragging ? 50 : (activeSearchIndex === index ? 40 : 10);
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex,
+        position: 'relative' as const,
+    };
+
+    return (
+        <tr
+            ref={setNodeRef}
+            style={style}
+            className={`group hover:bg-zinc-800/30 transition-colors ${isDragging ? 'bg-zinc-800/50 shadow-2xl' : ''} ${activeSearchIndex === index ? 'bg-zinc-800/20' : ''}`}
+        >
+            <td className="p-2 pl-4">
+                <button
+                    type="button"
+                    {...attributes}
+                    {...listeners}
+                    className="text-zinc-600 hover:text-zinc-400 cursor-grab active:cursor-grabbing p-1"
+                >
+                    <GripVertical size={16} />
+                </button>
+            </td>
+            <td className="p-2 relative">
+                <div className="relative">
+                    <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) => handleIngredientSearch(index, e.target.value)}
+                        onFocus={() => {
+                            if (!isIngredientLinked(item)) {
+                                setActiveSearchIndex(index);
+                                // If it's empty or we want to show all on focus:
+                                if (!item.name) setSearchQuery('');
+                                else setSearchQuery(item.name);
+                                setShowSuggestions(true);
+                            }
+                        }}
+                        readOnly={isIngredientLinked(item)}
+                        placeholder="Malzeme adı..."
+                        className={`w-full bg-transparent border-dashed border-b p-0 text-sm pb-1 focus:ring-0 ${item.intermediateProductId
+                            ? 'text-orange-400 font-medium border-transparent'
+                            : item.rawIngredientId
+                                ? 'text-indigo-400 font-medium border-transparent'
+                                : 'text-zinc-200 border-zinc-700 placeholder-zinc-700 focus:border-indigo-500'
+                            }`}
+                    />
+                    {item.rawIngredientId && (
+                        <Link size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-indigo-500/50" />
+                    )}
+                    {item.intermediateProductId && (
+                        <Link size={12} className="absolute right-0 top-1/2 -translate-y-1/2 text-orange-500/50" />
+                    )}
+                </div>
+
+                {/* Auto-complete Dropdown */}
+                {showSuggestions && activeSearchIndex === index && !isIngredientLinked(item) && (
+                    <div ref={searchRef} className="absolute left-0 top-full mt-1 w-80 bg-zinc-950 border border-zinc-700 rounded-lg shadow-2xl z-[100] overflow-hidden max-h-72 overflow-y-auto ring-1 ring-black/50">
+                        {/* Search Bar in Dropdown */}
+                        <div className="p-2 border-b border-zinc-800 bg-zinc-900/80 sticky top-0 z-20 backdrop-blur-md">
+                            <div className="relative">
+                                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+                                <input
+                                    autoFocus
+                                    type="text"
+                                    placeholder="Malzeme ara..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => e.stopPropagation()} // Prevent DND keyboard interference
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-md pl-9 pr-3 py-1.5 text-xs text-white placeholder-zinc-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Intermediate Products Section */}
+                        {filteredIntermediateProducts.length > 0 && (
+                            <>
+                                <div className="px-3 py-1.5 bg-orange-500/10 border-b border-zinc-700 text-[10px] font-semibold text-orange-400 uppercase tracking-wider">
+                                    Ara Ürünler
+                                </div>
+                                {filteredIntermediateProducts.map(ip => (
+                                    <div
+                                        key={ip.id}
+                                        onClick={() => selectIntermediateProduct(item.id, ip)}
+                                        className="px-3 py-2 hover:bg-orange-500/10 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group border-l-2 border-transparent hover:border-orange-500"
+                                    >
+                                        <span className="text-orange-300">{ip.name}</span>
+                                        <span className="text-xs text-orange-500/70 font-mono group-hover:text-orange-400">
+                                            {ip.costPerUnit.toFixed(2)}₺/{ip.productionUnit}
+                                        </span>
+                                    </div>
+                                ))}
+                            </>
+                        )}
+
+                        {/* Raw Ingredients Section */}
+                        {filteredRawIngredients.length > 0 && (
+                            <>
+                                <div className="px-3 py-1.5 bg-indigo-500/10 border-b border-zinc-700 text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">
+                                    Hammaddeler
+                                </div>
+                                {filteredRawIngredients.map(ri => (
+                                    <div
+                                        key={ri.id}
+                                        onClick={() => selectRawIngredient(item.id, ri)}
+                                        className="px-3 py-2 hover:bg-indigo-500/10 cursor-pointer text-sm text-zinc-300 flex justify-between items-center group border-l-2 border-transparent hover:border-indigo-500"
+                                    >
+                                        <span>{ri.name}</span>
+                                        <span className="text-xs text-zinc-500 font-mono group-hover:text-zinc-400">
+                                            {ri.price.toFixed(2)}₺/{ri.unit}
+                                        </span>
+                                    </div>
+                                ))}
+                            </>
+                        )}
+
+                        {/* No Results */}
+                        {filteredRawIngredients.length === 0 && filteredIntermediateProducts.length === 0 && (
+                            <div className="px-3 py-2 text-xs text-zinc-500">Sonuç bulunamadı</div>
+                        )}
+                    </div>
+                )}
+            </td>
+            <td className="p-2">
+                <NumberInput
+                    value={item.quantity}
+                    onChange={(val) => updateIngredient(index, 'quantity', val)}
+                    className="w-full"
+                    placeholder="0"
+                    step={0.001}
+                />
+            </td>
+            <td className="p-2">
+                {item.rawIngredientId || (item.intermediateProductId && !intermediateProducts.find(p => p.id === item.intermediateProductId)?.portionWeight) ? (
+                    <div className={`text-sm px-1 py-1 ${item.intermediateProductId ? 'text-orange-400' : 'text-zinc-400'}`}>{item.unit}</div>
+                ) : (
+                    <select
+                        value={item.unit}
+                        onChange={(e) => updateIngredient(index, 'unit', e.target.value)}
+                        className="w-full bg-zinc-800/50 rounded px-1 py-1 text-zinc-300 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 text-xs"
+                    >
+                        {item.intermediateProductId ? (
+                            <>
+                                <option value="adet">Adet</option>
+                                <option value={intermediateProducts.find(p => p.id === item.intermediateProductId)?.productionUnit}>
+                                    {intermediateProducts.find(p => p.id === item.intermediateProductId)?.productionUnit}
+                                </option>
+                            </>
+                        ) : (
+                            <>
+                                <option value="adet">Adet</option>
+                                <option value="kg">Kg</option>
+                                <option value="gr">Gr</option>
+                                <option value="lt">Lt</option>
+                                <option value="cl">Cl</option>
+                            </>
+                        )}
+                    </select>
+                )}
+            </td>
+            <td className="p-2">
+                {isIngredientLinked(item) ? (
+                    <div className={`font-mono text-sm px-1 opacity-70 cursor-not-allowed ${item.intermediateProductId ? 'text-orange-400' : 'text-zinc-400'}`}>
+                        {item.price.toFixed(2)}
+                    </div>
+                ) : (
+                    <NumberInput
+                        value={item.price}
+                        onChange={(val) => updateIngredient(index, 'price', val)}
+                        className="w-full"
+                        placeholder="0.00"
+                        step={0.001}
+                    />
+                )}
+            </td>
+            <td className="p-2 text-right font-mono text-zinc-400 text-sm">
+                {(item.quantity * item.price).toFixed(2)}
+            </td>
+            <td className="p-2 text-center">
+                <div className="flex items-center justify-center gap-1">
+                    {isIngredientLinked(item) && (
+                        <button
+                            onClick={() => handleEditIngredient(item.id)}
+                            className="text-zinc-600 hover:text-indigo-400 transition-colors p-1"
+                            title="Malzemeyi Değiştir"
+                        >
+                            <Pencil size={14} />
+                        </button>
+                    )}
+                    <button
+                        onClick={() => removeIngredientRow(index)}
+                        className="text-zinc-600 hover:text-red-400 transition-colors p-1"
+                        title="Sil"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                </div>
+            </td>
+        </tr>
     );
 }

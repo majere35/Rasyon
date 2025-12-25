@@ -51,7 +51,11 @@ export function RecipesView() {
     })).filter(cat => cat.recipes.length > 0 || !searchQuery); // Show categories even if empty only if not searching? 
     // Actually user says "Tavuk Burgerler. buna tıklandığında drop down menü olarak şu anki görünüm kartları açılsın"
 
-    const uncategorizedRecipes = recipes.filter(r => !r.categoryId && r.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    const categoryIds = recipeCategories.map(c => c.id);
+    const uncategorizedRecipes = recipes.filter(r =>
+        (!r.categoryId || !categoryIds.includes(r.categoryId)) &&
+        r.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     // Delete Modal State
     const [deleteId, setDeleteId] = useState<string | null>(null);
