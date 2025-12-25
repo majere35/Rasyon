@@ -434,10 +434,36 @@ export function IngredientsView() {
                 <p className="text-zinc-400">Reçetelerinizde kullanacağınız ürünleri ve fiyatlarını buradan yönetin.</p>
             </div>
 
-            <div className="flex bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden flex-1 shadow-xl">
+            {/* Mobile Category Selector */}
+            <div className="md:hidden overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar flex gap-2">
+                <button
+                    onClick={() => setSelectedCategory(null)}
+                    className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all ${selectedCategory === null
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                        : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                        }`}
+                >
+                    Tümü
+                </button>
+                {ingredientCategories.map(cat => (
+                    <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${selectedCategory === cat.id
+                            ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                            : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                            }`}
+                    >
+                        <div className={`w-2 h-2 rounded-full ${cat.color}`} />
+                        {cat.name}
+                    </button>
+                ))}
+            </div>
 
-                {/* LEFT: Categories Sidebar */}
-                <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+            <div className="flex bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden flex-1 shadow-xl flex-col md:flex-row">
+
+                {/* LEFT: Categories Sidebar (Desktop Only) */}
+                <div className="hidden md:flex w-64 bg-zinc-900 border-r border-zinc-800 flex-col">
                     <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
                         <span className="font-semibold text-zinc-300 text-sm">Kategoriler</span>
                         <button onClick={handleAddCategoryClick} className="text-zinc-400 hover:text-white p-1 hover:bg-zinc-800 rounded transition-colors">
@@ -489,53 +515,59 @@ export function IngredientsView() {
                 <div className="flex-1 flex flex-col bg-[#18181b]">
 
                     {/* Toolbar */}
-                    <div className="p-4 border-b border-zinc-800 flex justify-between items-center gap-4 bg-[#18181b]">
-                        <div className="relative flex-1 max-w-md">
+                    <div className="p-4 border-b border-zinc-800 flex flex-col md:flex-row md:items-center gap-4 bg-[#18181b]">
+                        <div className="relative flex-1 w-full md:max-w-md">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
                             <input
                                 type="text"
                                 placeholder="Hammadde ara..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500 transition-colors input-decimal"
                             />
                         </div>
 
-                        {selectedCategory && (
-                            <button
-                                onClick={() => {
-                                    setIsAddMode(true);
-                                    setEditingId(null);
-                                    setFormData({ name: '', price: 0, unit: 'kg', minimumStock: 0 });
-                                }}
-                                className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-lg shadow-indigo-500/20"
-                            >
-                                <Plus size={16} /> Yeni Hammadde
-                            </button>
-                        )}
+                        <div className="flex gap-2 w-full md:w-auto">
+                            {selectedCategory && (
+                                <button
+                                    onClick={() => {
+                                        setIsAddMode(true);
+                                        setEditingId(null);
+                                        setFormData({ name: '', price: 0, unit: 'kg', minimumStock: 0 });
+                                    }}
+                                    className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-500/20"
+                                >
+                                    <Plus size={16} />
+                                    <span className="md:hidden">Ekle</span>
+                                    <span className="hidden md:inline">Yeni Hammadde</span>
+                                </button>
+                            )}
 
-                        {/* Bulk Delete Button */}
-                        {selectedIds.size > 0 && (
-                            <button
-                                onClick={() => {
-                                    setDeleteId('bulk'); // Dummy
-                                    setDeleteType('bulk_ingredients');
-                                }}
-                                className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors animate-in fade-in"
-                            >
-                                <Trash2 size={16} /> Seçilenleri Sil ({selectedIds.size})
-                            </button>
-                        )}
+                            {/* Bulk Delete Button */}
+                            {selectedIds.size > 0 && (
+                                <button
+                                    onClick={() => {
+                                        setDeleteId('bulk'); // Dummy
+                                        setDeleteType('bulk_ingredients');
+                                    }}
+                                    className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors animate-in fade-in"
+                                >
+                                    <Trash2 size={16} />
+                                    <span className="md:hidden">Sil ({selectedIds.size})</span>
+                                    <span className="hidden md:inline">Seçilenleri Sil ({selectedIds.size})</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {/* Add/Edit Form Panel */}
                     {(isAddMode && selectedCategory) && (
                         <div className="border-b border-indigo-500/30 bg-indigo-500/5 p-4 animate-in slide-in-from-top-2">
                             <form onSubmit={handleSubmit} className="space-y-4">
-                                {/* Row 1: Category (if editing) + Name */}
-                                <div className="flex flex-wrap items-end gap-4">
+                                {/* Form content remains mostly same, just ensuring responsiveness */}
+                                <div className="flex flex-col md:flex-row items-end gap-4">
                                     {editingId && (
-                                        <div className="space-y-1 w-40">
+                                        <div className="space-y-1 w-full md:w-40">
                                             <label className="text-xs font-semibold text-indigo-300 ml-1">Kategori</label>
                                             <select
                                                 value={selectedCategory}
@@ -548,7 +580,7 @@ export function IngredientsView() {
                                             </select>
                                         </div>
                                     )}
-                                    <div className="space-y-1 flex-1 min-w-[200px]">
+                                    <div className="space-y-1 flex-1 w-full md:min-w-[200px]">
                                         <label className="text-xs font-semibold text-indigo-300 ml-1">Ürün Adı</label>
                                         <input
                                             autoFocus
@@ -560,63 +592,68 @@ export function IngredientsView() {
                                             placeholder="Örn: Sarımsak Püresi"
                                         />
                                     </div>
-                                    <div className="space-y-1 w-24">
-                                        <label className="text-xs font-semibold text-indigo-300 ml-1">Birim</label>
-                                        <select
-                                            value={formData.unit}
-                                            onChange={e => setFormData({ ...formData, unit: e.target.value as any })}
-                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-white focus:border-indigo-500 outline-none text-sm h-[38px]"
-                                        >
-                                            <option value="kg">Kg</option>
-                                            <option value="lt">Lt</option>
-                                            <option value="adet">Adet</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1 w-24">
-                                        <label className="text-xs font-semibold text-indigo-300 ml-1">KDV</label>
-                                        <select
-                                            value={formData.vatRate}
-                                            onChange={e => setFormData({ ...formData, vatRate: parseFloat(e.target.value) })}
-                                            className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-white focus:border-indigo-500 outline-none text-sm h-[38px]"
-                                        >
-                                            <option value={0.01}>%1</option>
-                                            <option value={0.10}>%10</option>
-                                            <option value={0.20}>%20</option>
-                                        </select>
+                                    <div className="flex gap-4 w-full md:w-auto">
+                                        <div className="space-y-1 w-1/2 md:w-24">
+                                            <label className="text-xs font-semibold text-indigo-300 ml-1">Birim</label>
+                                            <select
+                                                value={formData.unit}
+                                                onChange={e => setFormData({ ...formData, unit: e.target.value as any })}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-white focus:border-indigo-500 outline-none text-sm h-[38px]"
+                                            >
+                                                <option value="kg">Kg</option>
+                                                <option value="lt">Lt</option>
+                                                <option value="adet">Adet</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1 w-1/2 md:w-24">
+                                            <label className="text-xs font-semibold text-indigo-300 ml-1">KDV</label>
+                                            <select
+                                                value={formData.vatRate}
+                                                onChange={e => setFormData({ ...formData, vatRate: parseFloat(e.target.value) })}
+                                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-2 text-white focus:border-indigo-500 outline-none text-sm h-[38px]"
+                                            >
+                                                <option value={0.01}>%1</option>
+                                                <option value={0.10}>%10</option>
+                                                <option value={0.20}>%20</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
                                 {/* Row 2: Package-based pricing */}
-                                <div className="flex flex-wrap items-end gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800">
+                                <div className="flex flex-col md:flex-row items-end gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800">
                                     <div className="text-xs text-zinc-500 w-full mb-1">
                                         📦 Ambalaj Bilgisi <span className="text-zinc-600">(birim fiyat otomatik hesaplanır)</span>
                                     </div>
 
-                                    <div className="space-y-1 w-24">
-                                        <label className="text-xs font-semibold text-zinc-500 ml-1">Miktar</label>
-                                        <NumberInput
-                                            value={formData.packageQuantity || 0}
-                                            onChange={val => setFormData({ ...formData, packageQuantity: val || undefined })}
-                                            className="w-full bg-zinc-800"
-                                            placeholder="350"
-                                            step={1}
-                                        />
+                                    <div className="flex w-full gap-4">
+                                        <div className="space-y-1 flex-1">
+                                            <label className="text-xs font-semibold text-zinc-500 ml-1">Miktar</label>
+                                            <NumberInput
+                                                value={formData.packageQuantity || 0}
+                                                onChange={val => setFormData({ ...formData, packageQuantity: val || undefined })}
+                                                className="w-full bg-zinc-800"
+                                                placeholder="350"
+                                                step={1}
+                                            />
+                                        </div>
+                                        <div className="space-y-1 w-24">
+                                            <label className="text-xs font-semibold text-zinc-500 ml-1">Birim</label>
+                                            <select
+                                                value={formData.packageUnit}
+                                                onChange={e => setFormData({ ...formData, packageUnit: e.target.value as any })}
+                                                className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-2 text-white outline-none text-sm h-[38px]"
+                                            >
+                                                <option value="gr">Gr</option>
+                                                <option value="kg">Kg</option>
+                                                <option value="lt">Lt</option>
+                                                <option value="cl">Cl</option>
+                                                <option value="adet">Adet</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div className="space-y-1 w-20">
-                                        <label className="text-xs font-semibold text-zinc-500 ml-1">Birim</label>
-                                        <select
-                                            value={formData.packageUnit}
-                                            onChange={e => setFormData({ ...formData, packageUnit: e.target.value as any })}
-                                            className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-2 text-white outline-none text-sm h-[38px]"
-                                        >
-                                            <option value="gr">Gr</option>
-                                            <option value="kg">Kg</option>
-                                            <option value="lt">Lt</option>
-                                            <option value="cl">Cl</option>
-                                            <option value="adet">Adet</option>
-                                        </select>
-                                    </div>
-                                    <div className="space-y-1 w-28">
+
+                                    <div className="w-full md:w-auto">
                                         <label className="text-xs font-semibold text-zinc-500 ml-1">Ambalaj Fiyatı</label>
                                         <NumberInput
                                             value={formData.packagePrice || 0}
@@ -627,9 +664,9 @@ export function IngredientsView() {
                                         />
                                     </div>
 
-                                    <div className="flex items-center gap-2 ml-2">
-                                        <span className="text-zinc-600">=</span>
-                                        <div className="bg-indigo-500/10 border border-indigo-500/30 rounded px-3 py-2">
+                                    <div className="flex items-center gap-2 ml-2 w-full md:w-auto mt-2 md:mt-0">
+                                        <span className="text-zinc-600 hidden md:inline">=</span>
+                                        <div className="bg-indigo-500/10 border border-indigo-500/30 rounded px-3 py-2 w-full text-center md:w-auto">
                                             <span className="text-xs text-indigo-400">Birim Fiyat: </span>
                                             <span className="font-mono text-indigo-300 font-bold">
                                                 {computedUnitPrice.toFixed(2)}₺/{formData.unit}
@@ -639,7 +676,7 @@ export function IngredientsView() {
                                 </div>
 
                                 {/* Row 3: Actions */}
-                                <div className="flex justify-end gap-3">
+                                <div className="flex justify-end gap-3 sticky bottom-0 bg-[#18181b] p-2 md:relative md:bg-transparent md:p-0">
                                     <button type="button" onClick={() => setIsAddMode(false)} className="text-zinc-400 hover:text-white px-4 py-2">
                                         İptal
                                     </button>
@@ -651,66 +688,123 @@ export function IngredientsView() {
                         </div>
                     )}
 
-                    {/* Table */}
+                    {/* Content Area */}
                     <div className="flex-1 overflow-auto bg-[#18181b]">
                         {filteredIngredients.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-48 text-zinc-500">
                                 <AlertCircle size={32} className="mb-2 opacity-50" />
-                                <p>{selectedCategory ? 'Bu kategoride hammadde yok.' : 'Kategori seçerek başlayın.'}</p>
+                                <p className="text-center px-4">{selectedCategory ? 'Bu kategoride hammadde yok.' : 'Kategori seçerek başlayın.'}</p>
                             </div>
                         ) : (
-                            <table className="w-full text-left text-sm">
-                                <thead className="bg-[#18181b] text-zinc-500 font-medium border-b border-zinc-800 sticky top-0 z-10">
-                                    <tr>
-                                        <th className="px-6 py-3 w-10">
-                                            <input
-                                                type="checkbox"
-                                                checked={filteredIngredients.length > 0 && selectedIds.size === filteredIngredients.length}
-                                                onChange={toggleSelectAll}
-                                                className="rounded bg-zinc-800 border-zinc-700 text-indigo-600 focus:ring-indigo-500"
-                                            />
-                                        </th>
-                                        <th className="px-6 py-3 font-normal">Hammadde Adı</th>
-                                        <th className="px-6 py-3 font-normal">Birim</th>
-                                        <th className="px-6 py-3 font-normal text-right">Birim Fiyat</th>
-                                        <th className="px-6 py-3 w-20"></th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-zinc-800/50">
-                                    {filteredIngredients.map(item => (
-                                        <tr key={item.id} className={`group hover:bg-zinc-800/30 transition-colors ${selectedIds.has(item.id) ? 'bg-indigo-500/5' : ''}`}>
-                                            <td className="px-6 py-3">
+                            <>
+                                {/* Desktop Table */}
+                                <table className="hidden md:table w-full text-left text-sm">
+                                    <thead className="bg-[#18181b] text-zinc-500 font-medium border-b border-zinc-800 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="px-6 py-3 w-10">
                                                 <input
                                                     type="checkbox"
-                                                    checked={selectedIds.has(item.id)}
-                                                    onChange={() => toggleSelectRow(item.id)}
+                                                    checked={filteredIngredients.length > 0 && selectedIds.size === filteredIngredients.length}
+                                                    onChange={toggleSelectAll}
                                                     className="rounded bg-zinc-800 border-zinc-700 text-indigo-600 focus:ring-indigo-500"
                                                 />
-                                            </td>
-                                            <td className="px-6 py-3 text-white font-medium">{item.name}</td>
-                                            <td className="px-6 py-3 text-zinc-400">
-                                                <span className="bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded text-xs uppercase">
-                                                    {item.unit}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-3 text-right font-mono text-indigo-300">
-                                                {formatCurrency(item.price)}
-                                            </td>
-                                            <td className="px-6 py-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => handleEdit(item)} className="p-1.5 text-zinc-500 hover:text-white hover:bg-indigo-500/20 rounded transition-colors">
-                                                    <Edit2 size={16} />
+                                            </th>
+                                            <th className="px-6 py-3 font-normal">Hammadde Adı</th>
+                                            <th className="px-6 py-3 font-normal">Birim</th>
+                                            <th className="px-6 py-3 font-normal text-right">Birim Fiyat</th>
+                                            <th className="px-6 py-3 w-20"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-800/50">
+                                        {filteredIngredients.map(item => (
+                                            <tr key={item.id} className={`group hover:bg-zinc-800/30 transition-colors ${selectedIds.has(item.id) ? 'bg-indigo-500/5' : ''}`}>
+                                                <td className="px-6 py-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.has(item.id)}
+                                                        onChange={() => toggleSelectRow(item.id)}
+                                                        className="rounded bg-zinc-800 border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-3 text-white font-medium">{item.name}</td>
+                                                <td className="px-6 py-3 text-zinc-400">
+                                                    <span className="bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded text-xs uppercase">
+                                                        {item.unit}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-3 text-right font-mono text-indigo-300">
+                                                    {formatCurrency(item.price)}
+                                                </td>
+                                                <td className="px-6 py-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => handleEdit(item)} className="p-1.5 text-zinc-500 hover:text-white hover:bg-indigo-500/20 rounded transition-colors">
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setDeleteId(item.id); setDeleteType('ingredient'); }}
+                                                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+
+                                {/* Mobile Card View */}
+                                <div className="md:hidden space-y-3 p-4 pb-24">
+                                    {filteredIngredients.map(item => (
+                                        <div
+                                            key={item.id}
+                                            className={`bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3 active:scale-[0.99] transition-transform ${selectedIds.has(item.id) ? 'ring-1 ring-indigo-500 bg-indigo-500/5' : ''}`}
+                                            onClick={() => toggleSelectRow(item.id)}
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.has(item.id)}
+                                                        readOnly
+                                                        className="rounded bg-zinc-800 border-zinc-700 text-indigo-600 focus:ring-indigo-500 w-5 h-5 pointer-events-none"
+                                                    />
+                                                    <div>
+                                                        <h4 className="font-bold text-white text-base leading-tight">{item.name}</h4>
+                                                        <span className="text-xs text-zinc-500">
+                                                            {item.packageQuantity ? `${item.packageQuantity} ${item.packageUnit}` : 'Dökme'} • %{(item.vatRate || 0.01) * 100} KDV
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-zinc-800 border border-zinc-700/50 px-2 py-1 rounded text-right">
+                                                    <div className="font-mono text-indigo-300 font-bold text-sm">
+                                                        {formatCurrency(item.price)}
+                                                    </div>
+                                                    <div className="text-[10px] text-zinc-500 uppercase">
+                                                        Birim: {item.unit}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex justify-end gap-3 pt-2 border-t border-zinc-800/50 mt-1">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                                    className="flex items-center gap-2 text-zinc-400 px-3 py-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 active:bg-zinc-700 transition-colors"
+                                                >
+                                                    <Edit2 size={18} />
+                                                    <span className="text-xs font-bold">Düzenle</span>
                                                 </button>
                                                 <button
-                                                    onClick={() => { setDeleteId(item.id); setDeleteType('ingredient'); }}
-                                                    className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                                    onClick={(e) => { e.stopPropagation(); setDeleteId(item.id); setDeleteType('ingredient'); }}
+                                                    className="flex items-center gap-2 text-red-400 px-3 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 active:bg-red-500/30 transition-colors"
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <Trash2 size={18} />
+                                                    <span className="text-xs font-bold">Sil</span>
                                                 </button>
-                                            </td>
-                                        </tr>
+                                            </div>
+                                        </div>
                                     ))}
-                                </tbody>
-                            </table>
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>
