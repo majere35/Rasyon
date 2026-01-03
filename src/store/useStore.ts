@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { AppState, Recipe, SalesTarget, Expense, IntermediateProduct } from '../types';
+import type { AppState, Recipe, SalesTarget, Expense, IntermediateProduct, MarketPriceEntry } from '../types';
 import { storage } from '../lib/storage';
 
 export const useStore = create<AppState>()(
@@ -513,6 +513,18 @@ export const useStore = create<AppState>()(
                 monthlyClosings: state.monthlyClosings.filter(m => m.monthStr !== monthStr)
             })),
 
+            // --- Market Analysis Actions ---
+            marketPrices: [],
+            addMarketPrice: (entry: MarketPriceEntry) => set((state) => ({
+                marketPrices: [...state.marketPrices, entry]
+            })),
+            updateMarketPrice: (id: string, updated: MarketPriceEntry) => set((state) => ({
+                marketPrices: state.marketPrices.map(p => p.id === id ? updated : p)
+            })),
+            deleteMarketPrice: (id: string) => set((state) => ({
+                marketPrices: state.marketPrices.filter(p => p.id !== id)
+            })),
+
             addRecipeCategory: (category) => set((state) => ({
                 recipeCategories: [...state.recipeCategories, category]
             })),
@@ -547,6 +559,7 @@ export const useStore = create<AppState>()(
                 intermediateProducts: state.intermediateProducts,
                 monthlyClosings: state.monthlyClosings, // Persist monthly data
                 onlineCommissionRate: state.onlineCommissionRate, // Persist commission rate
+                marketPrices: state.marketPrices, // Market Analysis
             }),
         }
     )

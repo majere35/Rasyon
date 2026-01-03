@@ -6,6 +6,17 @@ export interface ReleaseNote {
 
 export const releaseNotes: ReleaseNote[] = [
     {
+        version: '1.2.6',
+        date: '2026-01-03',
+        changes: [
+            '📊 Pazar Analizi: Yeni modül - rakip fiyatlarını karşılaştırın, pozisyonunuzu analiz edin.',
+            '🍟 Dahil Eklentiler: Patates ve içecek dahil mi işaretleyin, analiz tablosunda emojilerle görün.',
+            '🔍 Akıllı Autocomplete: Rakip isimlerinde önceden girilenleri hatırlayan autocomplete.',
+            '📈 Karşılaştırma Tablosu: Tüm rakipler yan yana, ortalama fiyat, yüzde fark gösterimi.',
+            '🎨 UI İyileştirmeleri: Dropdown ve sayı girişleri diğer sayfalarla tutarlı hale getirildi.'
+        ]
+    },
+    {
         version: '1.2.5',
         date: '2025-12-24',
         changes: [

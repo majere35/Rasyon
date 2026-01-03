@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChefHat, Wallet, Target, Settings, LogOut, ShieldCheck, LayoutList, CalendarCheck } from 'lucide-react';
+import { ChefHat, Wallet, Target, Settings, LogOut, ShieldCheck, LayoutList, CalendarCheck, TrendingUp } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useStore } from '../store/useStore';
@@ -23,6 +23,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         { id: 'targets', label: 'Satış Hedefi', icon: Target },
         { id: 'balance', label: 'Projeksiyon Sihirbazı', icon: Wallet },
         { id: 'monthly_accounting', label: 'Gerçekleşen Hesaplar', icon: CalendarCheck },
+        { id: 'market_analysis', label: 'Pazar Analizi', icon: TrendingUp },
     ] as const;
 
     return (

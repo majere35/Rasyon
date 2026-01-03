@@ -151,6 +151,12 @@ export interface AppState {
     monthlyClosings: MonthlyMonthData[]; // All monthly data stored locally
     saveMonthlyData: (data: MonthlyMonthData) => void;
     deleteMonthlyData: (monthStr: string) => void;
+
+    // Market Analysis
+    marketPrices: MarketPriceEntry[];
+    addMarketPrice: (entry: MarketPriceEntry) => void;
+    updateMarketPrice: (id: string, updated: MarketPriceEntry) => void;
+    deleteMarketPrice: (id: string) => void;
 }
 
 export interface Invoice {
@@ -194,4 +200,17 @@ export interface MonthlyMonthData {
     totalExpenses?: number;
     totalIncome?: number;
     netProfit?: number;
+}
+
+// Market Analysis - Competitor Price Tracking
+export interface MarketPriceEntry {
+    id: string;
+    competitorName: string;     // "Burger King" - autocomplete from existing entries
+    productName: string;        // "Whopper"
+    price: number;              // 195
+    includesFries: boolean;
+    includesDrink: boolean;
+    includesSauce: boolean;
+    includesOther?: string;     // Additional items included
+    matchedRecipeId?: string;   // Link to our recipe for comparison
 }

@@ -2,7 +2,7 @@ import { doc, setDoc, getDoc, collection, onSnapshot, getDocs, deleteField } fro
 import { db } from './firebase';
 import type { AppState } from '../types';
 
-export const PRESETS = ['recipes', 'salesTargets', 'expenses', 'packagingCosts', 'company', 'daysWorkedInMonth', 'rawIngredients', 'ingredientCategories'];
+export const PRESETS = ['recipes', 'salesTargets', 'expenses', 'packagingCosts', 'company', 'daysWorkedInMonth', 'rawIngredients', 'ingredientCategories', 'marketPrices'];
 
 
 export async function getUserData(uid: string): Promise<Partial<AppState> | null> {
