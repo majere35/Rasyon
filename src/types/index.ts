@@ -159,6 +159,13 @@ export interface AppState {
     deleteMarketPrice: (id: string) => void;
 }
 
+// Multi-VAT breakdown entry for invoices with mixed VAT rates
+export interface VatEntry {
+    rate: number;     // 0, 1, 10, 20
+    amount: number;   // Base amount for this rate
+    category: string; // Expense category for this line item
+}
+
 export interface Invoice {
     id: string;
     date: string; // ISO date string YYYY-MM-DD
@@ -166,10 +173,11 @@ export interface Invoice {
     description: string;
     category: string; // e.g. "Gıda", "Ambalaj", "Enerji", "Vergi/Stopaj", "Diğer"
     amount: number;
-    taxRate: number; // 0, 1, 10, 20 etc.
+    taxRate: number; // 0, 1, 10, 20 etc. - Used for simple mode
     status: 'paid' | 'pending';
     paymentDate?: string;
     taxMethod?: 'kdv' | 'stopaj'; // For Rent: 'kdv' (20% VAT) or 'stopaj' (20% Withholding on Gross)
+    vatBreakdown?: VatEntry[]; // Optional: For invoices with multiple VAT rates
 }
 
 export interface DailySale {

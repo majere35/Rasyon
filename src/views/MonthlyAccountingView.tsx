@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useStore } from '../store/useStore';
-import type { MonthlyMonthData, Invoice, DailySale } from '../types';
+import type { MonthlyMonthData, Invoice, DailySale, VatEntry } from '../types';
 import { CustomSelect } from '../components/CustomSelect';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { MonthlyBalanceTab } from '../components/MonthlyBalanceTab';
@@ -560,10 +560,32 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<Partial<Invoice>>({});
 
-    // Kategoriler merkezi dosyadan geliyor
+    // Multi-VAT Mode State
+    const [isMultiVatMode, setIsMultiVatMode] = useState(false);
+    const [vatEntries, setVatEntries] = useState<VatEntry[]>([]);
+    const [newVatEntry, setNewVatEntry] = useState<VatEntry>({ rate: 1, amount: 0, category: 'gida' });
+
+    // Multi-VAT Helper Functions
+    const addVatEntry = () => {
+        if (newVatEntry.amount <= 0) return;
+        setVatEntries([...vatEntries, { ...newVatEntry }]);
+        setNewVatEntry({ rate: 1, amount: 0, category: 'gida' });
+    };
+
+    const removeVatEntry = (index: number) => {
+        setVatEntries(vatEntries.filter((_, i) => i !== index));
+    };
+
+    const multiVatTotal = vatEntries.reduce((sum, e) => sum + e.amount, 0);
 
     const addInvoice = () => {
-        if (!newInvoice.supplier || !newInvoice.amount) return alert('Tedarikçi ve Tutar zorunludur.');
+        // Validate based on mode
+        if (isMultiVatMode) {
+            if (!newInvoice.supplier) return alert('Tedarikçi zorunludur.');
+            if (vatEntries.length === 0) return alert('En az bir KDV kalemi ekleyin.');
+        } else {
+            if (!newInvoice.supplier || !newInvoice.amount) return alert('Tedarikçi ve Tutar zorunludur.');
+        }
 
         const invoice: Invoice = {
             id: Date.now().toString(),
@@ -571,16 +593,24 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
             supplier: newInvoice.supplier,
             description: newInvoice.description || '',
             category: newInvoice.category || 'diger',
-            amount: Number(newInvoice.amount),
-            taxRate: Number(newInvoice.taxRate),
+            amount: isMultiVatMode ? multiVatTotal : Number(newInvoice.amount),
+            taxRate: isMultiVatMode ? 0 : Number(newInvoice.taxRate), // 0 when using breakdown
             status: newInvoice.status as 'paid' | 'pending' || 'paid',
             paymentDate: newInvoice.paymentDate,
-            taxMethod: newInvoice.category === 'kira' ? (newInvoice.taxMethod || 'stopaj') : undefined
+            taxMethod: newInvoice.category === 'kira' ? (newInvoice.taxMethod || 'stopaj') : undefined,
+            vatBreakdown: isMultiVatMode ? [...vatEntries] : undefined
         };
 
         const updatedInvoices = [...data.invoices, invoice];
+        updatedInvoices.sort((a, b) => a.date.localeCompare(b.date));
         onChange({ ...data, invoices: updatedInvoices });
+
+        // Reset form
         setNewInvoice({ ...newInvoice, supplier: '', description: '', amount: 0 });
+        if (isMultiVatMode) {
+            setVatEntries([]);
+            setIsMultiVatMode(false);
+        }
     };
 
     // Confirm Modal State
@@ -636,6 +666,7 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
             return inv;
         });
 
+        updatedInvoices.sort((a, b) => a.date.localeCompare(b.date));
         onChange({ ...data, invoices: updatedInvoices });
         setEditingId(null);
         setEditForm({});
@@ -649,15 +680,27 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
         };
 
         data.invoices.forEach(inv => {
-            const amt = inv.amount || 0;
-            const rate = (inv.taxRate !== undefined ? inv.taxRate : 20) / 100;
-            if (rate === 0) return;
-
-            if (!breakdown[rate]) breakdown[rate] = { base: 0, vat: 0 };
-
+            // Skip rent with stopaj
             if (inv.category === 'kira' && inv.taxMethod === 'stopaj') {
-                // skip
+                return;
+            }
+
+            // Check for multi-VAT breakdown first
+            if (inv.vatBreakdown && inv.vatBreakdown.length > 0) {
+                inv.vatBreakdown.forEach(entry => {
+                    const rate = entry.rate / 100;
+                    if (rate === 0) return;
+                    if (!breakdown[rate]) breakdown[rate] = { base: 0, vat: 0 };
+                    const vat = entry.amount * rate;
+                    breakdown[rate].base += entry.amount;
+                    breakdown[rate].vat += vat;
+                });
             } else {
+                // Simple mode - single taxRate
+                const amt = inv.amount || 0;
+                const rate = (inv.taxRate !== undefined ? inv.taxRate : 20) / 100;
+                if (rate === 0) return;
+                if (!breakdown[rate]) breakdown[rate] = { base: 0, vat: 0 };
                 const vat = amt * rate;
                 breakdown[rate].base += amt;
                 breakdown[rate].vat += vat;
@@ -675,10 +718,28 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
             {/* ... form ... */}
             {!isReadOnly && (
                 <div className="bg-white dark:bg-[#18181b] p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                    {/* ... new invoice inputs ... */}
-                    <h3 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4">Yeni Fatura Ekle</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:flex lg:items-center gap-3">
-                        {/* New Invoice Form Inputs */}
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Yeni Fatura Ekle</h3>
+                        <button
+                            onClick={() => {
+                                setIsMultiVatMode(!isMultiVatMode);
+                                if (!isMultiVatMode) {
+                                    setVatEntries([]);
+                                }
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isMultiVatMode
+                                ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 ring-2 ring-indigo-500/30'
+                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                                }`}
+                            title={isMultiVatMode ? "Basit KDV moduna dön" : "Çoklu KDV girişi"}
+                        >
+                            <Receipt className="w-3.5 h-3.5" />
+                            {isMultiVatMode ? 'Çoklu KDV Aktif' : 'Çoklu KDV'}
+                        </button>
+                    </div>
+
+                    {/* Basic Info Row */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:flex lg:items-center gap-3 mb-3">
                         <div className="min-w-[130px] lg:w-[130px]">
                             <CustomDatePicker
                                 value={newInvoice.date || ''}
@@ -695,35 +756,129 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                                 options={expenseCategoryOptions}
                             />
                         </div>
-                        <input type="number" placeholder="Tutar" value={newInvoice.amount || ''} onChange={e => setNewInvoice({ ...newInvoice, amount: e.target.valueAsNumber })} className="p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm lg:w-[100px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
 
-                        {/* Rent Specific: Tax Method Selector */}
-                        {newInvoice.category === 'kira' && (
-                            <div className="min-w-[100px] lg:w-[100px]">
-                                <CustomSelect
-                                    value={newInvoice.taxMethod || 'stopaj'}
-                                    onChange={v => setNewInvoice({ ...newInvoice, taxMethod: v as any })}
-                                    options={[
-                                        { label: 'Stopaj', value: 'stopaj' },
-                                        { label: 'KDV', value: 'kdv' }
-                                    ]}
-                                />
-                            </div>
+                        {/* Simple Mode: Amount and VAT inline */}
+                        {!isMultiVatMode && (
+                            <>
+                                <input type="number" placeholder="Tutar" value={newInvoice.amount || ''} onChange={e => setNewInvoice({ ...newInvoice, amount: e.target.valueAsNumber })} className="p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm lg:w-[100px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+
+                                {newInvoice.category === 'kira' && (
+                                    <div className="min-w-[100px] lg:w-[100px]">
+                                        <CustomSelect
+                                            value={newInvoice.taxMethod || 'stopaj'}
+                                            onChange={v => setNewInvoice({ ...newInvoice, taxMethod: v as any })}
+                                            options={[
+                                                { label: 'Stopaj', value: 'stopaj' },
+                                                { label: 'KDV', value: 'kdv' }
+                                            ]}
+                                        />
+                                    </div>
+                                )}
+                                <div className="min-w-[110px] lg:w-[110px]">
+                                    <CustomSelect
+                                        value={newInvoice.taxRate?.toString() || '20'}
+                                        onChange={v => setNewInvoice({ ...newInvoice, taxRate: Number(v) })}
+                                        options={[
+                                            { label: '%0', value: '0' },
+                                            { label: '%1', value: '1' },
+                                            { label: '%10', value: '10' },
+                                            { label: '%20', value: '20' }
+                                        ]}
+                                    />
+                                </div>
+                                <button onClick={addInvoice} className="bg-indigo-600 text-white rounded p-2 text-sm font-medium hover:bg-indigo-700 h-10 w-10 flex items-center justify-center flex-shrink-0"><Plus className="w-5 h-5" /></button>
+                            </>
                         )}
-                        <div className="min-w-[110px] lg:w-[110px]">
-                            <CustomSelect
-                                value={newInvoice.taxRate?.toString() || '20'}
-                                onChange={v => setNewInvoice({ ...newInvoice, taxRate: Number(v) })}
-                                options={[
-                                    { label: '%0', value: '0' },
-                                    { label: '%1', value: '1' },
-                                    { label: '%10', value: '10' },
-                                    { label: '%20', value: '20' }
-                                ]}
-                            />
-                        </div>
-                        <button onClick={addInvoice} className="bg-indigo-600 text-white rounded p-2 text-sm font-medium hover:bg-indigo-700 h-10 w-10 flex items-center justify-center flex-shrink-0"><Plus className="w-5 h-5" /></button>
                     </div>
+
+                    {/* Multi-VAT Mode: Detailed Entry Section */}
+                    {isMultiVatMode && (
+                        <div className="mt-4 p-4 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-xl border border-indigo-200/50 dark:border-indigo-800/30">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Receipt className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">KDV Detayları</span>
+                            </div>
+
+                            {/* VAT Entry Input Row */}
+                            <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                <div className="w-[80px]">
+                                    <CustomSelect
+                                        value={newVatEntry.rate.toString()}
+                                        onChange={v => setNewVatEntry({ ...newVatEntry, rate: Number(v) })}
+                                        options={[
+                                            { label: '%1', value: '1' },
+                                            { label: '%10', value: '10' },
+                                            { label: '%20', value: '20' }
+                                        ]}
+                                    />
+                                </div>
+                                <div className="w-[110px]">
+                                    <CustomSelect
+                                        value={newVatEntry.category}
+                                        onChange={v => setNewVatEntry({ ...newVatEntry, category: v })}
+                                        options={expenseCategoryOptions}
+                                    />
+                                </div>
+                                <input
+                                    type="number"
+                                    placeholder="Tutar"
+                                    value={newVatEntry.amount || ''}
+                                    onChange={e => setNewVatEntry({ ...newVatEntry, amount: e.target.valueAsNumber || 0 })}
+                                    onKeyDown={e => e.key === 'Enter' && addVatEntry()}
+                                    className="p-2 rounded border dark:bg-zinc-800 dark:border-zinc-700 text-sm w-[100px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <button
+                                    onClick={addVatEntry}
+                                    className="bg-indigo-600 text-white rounded p-2 text-sm font-medium hover:bg-indigo-700 h-10 w-10 flex items-center justify-center"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Added VAT Entries as Chips */}
+                            {vatEntries.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {vatEntries.map((entry, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-sm"
+                                        >
+                                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${entry.rate === 1 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                                                entry.rate === 10 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :
+                                                    'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                }`}>%{entry.rate}</span>
+                                            <span className="text-xs text-zinc-500 dark:text-zinc-400">{getCategoryLabel(entry.category)}</span>
+                                            <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                                {formatCurrency(entry.amount)}
+                                            </span>
+                                            <button
+                                                onClick={() => removeVatEntry(idx)}
+                                                className="text-zinc-400 hover:text-red-500 transition-colors"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Total and Submit */}
+                            <div className="flex items-center justify-between pt-3 border-t border-indigo-200/50 dark:border-indigo-800/30">
+                                <div className="flex items-center gap-4">
+                                    <span className="text-sm text-zinc-500 dark:text-zinc-400">Toplam Tutar:</span>
+                                    <span className="text-lg font-bold text-zinc-900 dark:text-white">{formatCurrency(multiVatTotal)}</span>
+                                </div>
+                                <button
+                                    onClick={addInvoice}
+                                    disabled={vatEntries.length === 0}
+                                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    Fatura Ekle
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -745,7 +900,7 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                         {data.invoices.length === 0 && (
                             <tr><td colSpan={7} className="p-4 text-center text-zinc-500">Henüz fatura girişi yapılmamış.</td></tr>
                         )}
-                        {data.invoices.map((inv) => (
+                        {data.invoices.slice().sort((a, b) => a.date.localeCompare(b.date)).map((inv) => (
                             <tr key={inv.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
                                 {editingId === inv.id ? (
                                     <>
@@ -787,6 +942,13 @@ const ExpensesTab = ({ data, isReadOnly, onChange }: { data: MonthlyMonthData, i
                                         <td className="p-3 text-right text-zinc-500">
                                             {inv.category === 'kira' && inv.taxMethod === 'stopaj' ? (
                                                 <span className="text-orange-500 font-bold text-xs bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded">STOPAJ</span>
+                                            ) : inv.vatBreakdown && inv.vatBreakdown.length > 0 ? (
+                                                <span
+                                                    className="text-indigo-600 dark:text-indigo-400 font-bold text-xs bg-indigo-100 dark:bg-indigo-900/30 px-2 py-0.5 rounded cursor-help"
+                                                    title={inv.vatBreakdown.map(e => `%${e.rate}: ${formatCurrency(e.amount)}`).join(' | ')}
+                                                >
+                                                    Çoklu KDV
+                                                </span>
                                             ) : (
                                                 <>%{inv.taxRate}</>
                                             )}
