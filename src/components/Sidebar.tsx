@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChefHat, Wallet, Target, Settings, LogOut, ShieldCheck, LayoutList, CalendarCheck, TrendingUp } from 'lucide-react';
+import { ChefHat, Wallet, Target, Settings, LogOut, ShieldCheck, LayoutList, CalendarCheck, TrendingUp, Receipt } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useStore } from '../store/useStore';
@@ -18,6 +18,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const menuItems = [
+        { id: 'pos', label: 'POS Kasa', icon: Receipt },
         { id: 'ingredients', label: 'Hammaddeler', icon: LayoutList },
         { id: 'recipes', label: 'Reçeteler', icon: ChefHat },
         { id: 'targets', label: 'Satış Hedefi', icon: Target },

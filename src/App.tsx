@@ -10,6 +10,7 @@ import { AdminView } from './views/AdminView';
 import { AdminUsersView } from './views/AdminUsersView';
 import { AdminReportsView, AdminSettingsView } from './views/AdminPlaceholderViews';
 import { MarketAnalysisView } from './views/MarketAnalysisView';
+import { POSView } from './views/POSView';
 import { useStore } from './store/useStore';
 import { WelcomeModal } from './components/WelcomeModal';
 import { auth } from './lib/firebase';
@@ -103,6 +104,7 @@ function App() {
       <DashboardLayout>
         {(activeTab) => (
           <>
+            {activeTab === 'pos' && <POSView />}
             {activeTab === 'recipes' && <RecipesView />}
             {activeTab === 'ingredients' && <IngredientsView />}
             {activeTab === 'targets' && <TargetsView />}

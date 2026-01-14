@@ -5,7 +5,7 @@ import { useStore } from '../store/useStore';
 import { ChefHat } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export type ActiveTab = 'recipes' | 'ingredients' | 'targets' | 'balance' | 'monthly_accounting' | 'market_analysis' | 'admin_dashboard' | 'admin_users' | 'admin_reports' | 'admin_settings';
+export type ActiveTab = 'pos' | 'recipes' | 'ingredients' | 'targets' | 'balance' | 'monthly_accounting' | 'market_analysis' | 'admin_dashboard' | 'admin_users' | 'admin_reports' | 'admin_settings';
 
 interface DashboardLayoutProps {
     children: (activeTab: ActiveTab) => React.ReactNode;
