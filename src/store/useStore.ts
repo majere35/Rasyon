@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { AppState, Recipe, SalesTarget, Expense, IntermediateProduct, MarketPriceEntry } from '../types';
+import type { AppState, Recipe, SalesTarget, Expense, IntermediateProduct, MarketPriceEntry, Supplier, SupplierOrderSlip, SupplierInvoice, SupplierPayment } from '../types';
 import { storage } from '../lib/storage';
 
 export const useStore = create<AppState>()(
@@ -542,6 +542,130 @@ export const useStore = create<AppState>()(
             })),
 
             setRecipeCategories: (categories) => set({ recipeCategories: categories }),
+
+            // --- Cari Takip (Supplier Account Tracking) Actions ---
+            suppliers: [],
+            supplierOrderSlips: [],
+            supplierInvoices: [],
+            supplierPayments: [],
+
+            addSupplier: (supplier: Supplier) => set((state) => ({
+                suppliers: [...state.suppliers, supplier]
+            })),
+            updateSupplier: (id: string, supplier: Supplier) => set((state) => {
+                const oldSupplier = state.suppliers.find(s => s.id === id);
+                const vadeChanged = oldSupplier && oldSupplier.paymentTermDays !== supplier.paymentTermDays;
+
+                if (vadeChanged) {
+                    // Retroactively update unpaid invoices for this supplier
+                    const updatedInvoices = state.supplierInvoices.map(inv => {
+                        if (inv.supplierId === id && inv.status !== 'paid') {
+                            const d = new Date(inv.date);
+                            d.setDate(d.getDate() + supplier.paymentTermDays);
+                            const newDueDate = d.toISOString().split('T')[0];
+                            return { ...inv, dueDate: newDueDate };
+                        }
+                        return inv;
+                    });
+
+                    return {
+                        suppliers: state.suppliers.map(s => s.id === id ? supplier : s),
+                        supplierInvoices: updatedInvoices
+                    };
+                }
+
+                return {
+                    suppliers: state.suppliers.map(s => s.id === id ? supplier : s)
+                };
+            }),
+            deleteSupplier: (id: string) => set((state) => ({
+                suppliers: state.suppliers.filter(s => s.id !== id),
+                // Also delete related order slips, invoices, and payments
+                supplierOrderSlips: state.supplierOrderSlips.filter(o => o.supplierId !== id),
+                supplierInvoices: state.supplierInvoices.filter(i => i.supplierId !== id),
+                supplierPayments: state.supplierPayments.filter(p => p.supplierId !== id)
+            })),
+
+            addSupplierOrderSlip: (slip: SupplierOrderSlip) => set((state) => ({
+                supplierOrderSlips: [...state.supplierOrderSlips, slip]
+            })),
+            updateSupplierOrderSlip: (id: string, slip: SupplierOrderSlip) => set((state) => ({
+                supplierOrderSlips: state.supplierOrderSlips.map(s => s.id === id ? slip : s)
+            })),
+            deleteSupplierOrderSlip: (id: string) => set((state) => ({
+                supplierOrderSlips: state.supplierOrderSlips.filter(s => s.id !== id)
+            })),
+
+            addSupplierInvoice: (invoice: SupplierInvoice) => set((state) => ({
+                supplierInvoices: [...state.supplierInvoices, invoice]
+            })),
+            updateSupplierInvoice: (id: string, invoice: SupplierInvoice) => set((state) => ({
+                supplierInvoices: state.supplierInvoices.map(i => i.id === id ? invoice : i)
+            })),
+            deleteSupplierInvoice: (id: string) => set((state) => {
+                // Find linked order slips and reset their status
+                const invoice = state.supplierInvoices.find(i => i.id === id);
+                const linkedSlipIds = invoice?.linkedOrderSlipIds || [];
+
+                return {
+                    supplierInvoices: state.supplierInvoices.filter(i => i.id !== id),
+                    supplierOrderSlips: state.supplierOrderSlips.map(slip =>
+                        linkedSlipIds.includes(slip.id)
+                            ? { ...slip, status: 'pending' as const, invoiceId: undefined }
+                            : slip
+                    )
+                };
+            }),
+
+            addSupplierPayment: (payment: SupplierPayment) => set((state) => {
+                // If payment is linked to an invoice, update the invoice's paidAmount
+                if (payment.invoiceId) {
+                    return {
+                        supplierPayments: [...state.supplierPayments, payment],
+                        supplierInvoices: state.supplierInvoices.map(inv => {
+                            if (inv.id === payment.invoiceId) {
+                                const newPaidAmount = inv.paidAmount + payment.amount;
+                                const newStatus = newPaidAmount >= inv.totalAmount ? 'paid' :
+                                    newPaidAmount > 0 ? 'partial' : 'pending';
+                                return { ...inv, paidAmount: newPaidAmount, status: newStatus };
+                            }
+                            return inv;
+                        })
+                    };
+                }
+                return { supplierPayments: [...state.supplierPayments, payment] };
+            }),
+            updateSupplierPayment: (id: string, payment: SupplierPayment) => set((state) => ({
+                supplierPayments: state.supplierPayments.map(p => p.id === id ? payment : p)
+            })),
+            deleteSupplierPayment: (id: string) => set((state) => {
+                const payment = state.supplierPayments.find(p => p.id === id);
+                // If payment was linked to an invoice, subtract from paidAmount
+                if (payment?.invoiceId) {
+                    return {
+                        supplierPayments: state.supplierPayments.filter(p => p.id !== id),
+                        supplierInvoices: state.supplierInvoices.map(inv => {
+                            if (inv.id === payment.invoiceId) {
+                                const newPaidAmount = Math.max(0, inv.paidAmount - payment.amount);
+                                const newStatus = newPaidAmount >= inv.totalAmount ? 'paid' :
+                                    newPaidAmount > 0 ? 'partial' : 'pending';
+                                return { ...inv, paidAmount: newPaidAmount, status: newStatus };
+                            }
+                            return inv;
+                        })
+                    };
+                }
+                return { supplierPayments: state.supplierPayments.filter(p => p.id !== id) };
+            }),
+
+            convertOrderSlipsToInvoice: (slipIds: string[], invoice: SupplierInvoice) => set((state) => ({
+                supplierInvoices: [...state.supplierInvoices, invoice],
+                supplierOrderSlips: state.supplierOrderSlips.map(slip =>
+                    slipIds.includes(slip.id)
+                        ? { ...slip, status: 'invoiced' as const, invoiceId: invoice.id }
+                        : slip
+                )
+            })),
         }),
         {
             name: 'resto-app-storage',
@@ -560,6 +684,11 @@ export const useStore = create<AppState>()(
                 monthlyClosings: state.monthlyClosings, // Persist monthly data
                 onlineCommissionRate: state.onlineCommissionRate, // Persist commission rate
                 marketPrices: state.marketPrices, // Market Analysis
+                // Cari Takip
+                suppliers: state.suppliers,
+                supplierOrderSlips: state.supplierOrderSlips,
+                supplierInvoices: state.supplierInvoices,
+                supplierPayments: state.supplierPayments,
             }),
         }
     )

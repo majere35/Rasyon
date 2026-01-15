@@ -15,12 +15,14 @@
     "@dnd-kit/utilities": "^3.2.2",
     "caniuse-lite": "^1.0.30001760",
     "clsx": "^2.1.1",
+    "exceljs": "^4.4.0",
     "firebase": "^12.6.0",
     "idb-keyval": "^6.2.2",
     "lucide-react": "^0.561.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tailwind-merge": "^3.4.0",
+    "xlsx": "^0.18.5",
     "zustand": "^5.0.9"
   },
   "devDependencies": {

@@ -157,6 +157,25 @@ export interface AppState {
     addMarketPrice: (entry: MarketPriceEntry) => void;
     updateMarketPrice: (id: string, updated: MarketPriceEntry) => void;
     deleteMarketPrice: (id: string) => void;
+
+    // Cari Takip (Supplier Account Tracking)
+    suppliers: Supplier[];
+    supplierOrderSlips: SupplierOrderSlip[];
+    supplierInvoices: SupplierInvoice[];
+    supplierPayments: SupplierPayment[];
+    addSupplier: (supplier: Supplier) => void;
+    updateSupplier: (id: string, supplier: Supplier) => void;
+    deleteSupplier: (id: string) => void;
+    addSupplierOrderSlip: (slip: SupplierOrderSlip) => void;
+    updateSupplierOrderSlip: (id: string, slip: SupplierOrderSlip) => void;
+    deleteSupplierOrderSlip: (id: string) => void;
+    addSupplierInvoice: (invoice: SupplierInvoice) => void;
+    updateSupplierInvoice: (id: string, invoice: SupplierInvoice) => void;
+    deleteSupplierInvoice: (id: string) => void;
+    addSupplierPayment: (payment: SupplierPayment) => void;
+    updateSupplierPayment: (id: string, payment: SupplierPayment) => void;
+    deleteSupplierPayment: (id: string) => void;
+    convertOrderSlipsToInvoice: (slipIds: string[], invoice: SupplierInvoice) => void;
 }
 
 // Multi-VAT breakdown entry for invoices with mixed VAT rates
@@ -221,4 +240,76 @@ export interface MarketPriceEntry {
     includesSauce: boolean;
     includesOther?: string;     // Additional items included
     matchedRecipeId?: string;   // Link to our recipe for comparison
+}
+
+// ============================================
+// Cari Takip (Supplier Account Tracking) Module
+// ============================================
+
+// Tedarikçi (Supplier)
+export interface Supplier {
+    id: string;
+    name: string;                    // "Defne Gıda"
+    contactPerson?: string;          // İletişim kişisi
+    phone?: string;
+    email?: string;
+    address?: string;
+    paymentTermDays: number;         // Vade süresi (örn: 30 gün)
+    notes?: string;
+    createdAt: string;               // ISO date
+}
+
+// Sipariş Fişi (Order Slip) - Günlük teslimatlar için
+export interface SupplierOrderSlip {
+    id: string;
+    supplierId: string;
+    slipNo: string;                  // Fiş numarası
+    date: string;                    // Fiş tarihi (ISO)
+    items: SupplierInvoiceItem[];    // Fiş kalemleri
+    totalAmount: number;             // Toplam tutar
+    invoiceId?: string;              // Faturalaştırıldıysa bağlı fatura
+    status: 'pending' | 'invoiced';  // Faturalaştırılmış mı?
+    notes?: string;
+}
+
+// Tedarikçi Faturası
+export interface SupplierInvoice {
+    id: string;
+    supplierId: string;
+    invoiceNo: string;               // Fatura numarası
+    date: string;                    // Fatura tarihi (ISO)
+    dueDate: string;                 // Vade tarihi (otomatik hesaplanır)
+    items: SupplierInvoiceItem[];    // Doğrudan fatura kalemleri
+    linkedOrderSlipIds: string[];    // Bağlı sipariş fişleri
+    totalAmount: number;             // Toplam tutar
+    paidAmount: number;              // Ödenen tutar
+    status: 'pending' | 'partial' | 'paid';
+    notes?: string;
+}
+
+// Fatura/Fiş Kalemi (Hammadde bağlantılı)
+export interface SupplierInvoiceItem {
+    id: string;
+    rawIngredientId: string;         // Hammadde referansı
+    name: string;                    // Hammadde adı (snapshot)
+    quantity: number;                // Miktar
+    unitType: 'adet' | 'kutu' | 'koli' | 'kg' | 'lt' | 'paket'; // Miktar cinsi
+    unitPrice: number;               // Birim fiyat
+    discountPercent: number;         // İskonto yüzdesi
+    vatRate: number;                 // KDV oranı (0, 1, 10, 20)
+    subtotal: number;                // Ara toplam (quantity * unitPrice)
+    discountAmount: number;          // İskonto tutarı
+    vatAmount: number;               // KDV tutarı
+    totalPrice: number;              // Net toplam (subtotal - discount + vat)
+}
+
+// Tedarikçi Ödemesi
+export interface SupplierPayment {
+    id: string;
+    supplierId: string;
+    invoiceId?: string;              // İsteğe bağlı fatura bağlantısı
+    date: string;                    // Ödeme tarihi
+    amount: number;                  // Ödeme tutarı
+    method: 'cash' | 'card' | 'eft'; // Ödeme yöntemi
+    notes?: string;
 }

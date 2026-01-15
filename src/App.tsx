@@ -10,6 +10,7 @@ import { AdminView } from './views/AdminView';
 import { AdminUsersView } from './views/AdminUsersView';
 import { AdminReportsView, AdminSettingsView } from './views/AdminPlaceholderViews';
 import { MarketAnalysisView } from './views/MarketAnalysisView';
+import { SuppliersView } from './views/SuppliersView';
 import { POSView } from './views/POSView';
 import { useStore } from './store/useStore';
 import { WelcomeModal } from './components/WelcomeModal';
@@ -111,6 +112,7 @@ function App() {
             {activeTab === 'balance' && <BalanceView />}
             {activeTab === 'monthly_accounting' && <MonthlyAccountingView />}
             {activeTab === 'market_analysis' && <MarketAnalysisView />}
+            {activeTab === 'suppliers' && <SuppliersView />}
 
             {activeTab === 'admin_dashboard' && <AdminView />}
             {activeTab === 'admin_users' && <AdminUsersView />}

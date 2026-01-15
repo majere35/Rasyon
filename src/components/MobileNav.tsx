@@ -1,4 +1,4 @@
-import { ChefHat, Wallet, Menu as MenuIcon, LayoutList, X, Settings, LogOut, ShieldCheck } from 'lucide-react';
+import { ChefHat, Wallet, Menu as MenuIcon, LayoutList, X, Settings, LogOut, ShieldCheck, Users } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useState } from 'react';
@@ -119,7 +119,6 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
                         </div>
 
                         <div className="space-y-2">
-                            {/* Settings */}
                             <button
                                 onClick={() => {
                                     setIsMenuOpen(false);
@@ -129,6 +128,18 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
                             >
                                 <Settings size={20} className="text-zinc-500" />
                                 Ayarlar
+                            </button>
+
+                            {/* Cari Takip */}
+                            <button
+                                onClick={() => {
+                                    setIsMenuOpen(false);
+                                    onTabChange('suppliers');
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 text-zinc-700 dark:text-zinc-200 font-medium active:scale-95 transition-transform"
+                            >
+                                <Users size={20} className="text-zinc-500" />
+                                Cari Takip
                             </button>
 
                             {/* Admin (Conditional) */}
